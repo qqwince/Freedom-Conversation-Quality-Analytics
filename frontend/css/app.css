@@ -47,6 +47,7 @@
 .cqa-nav::-webkit-scrollbar { display: none; }
 .cqa-nav a { white-space: nowrap; }
 .cqa-app .cqa-user { width: auto; max-width: 260px; height: 34px; font-size: var(--cqa-fs-sm); }
+.cqa-app .cqa-lang { width: auto; height: 34px; padding-right: 28px; font-size: var(--cqa-fs-sm); }
 @media (max-width: 900px) {
   .cqa-header__inner { flex-wrap: wrap; column-gap: 16px; row-gap: 0; padding-bottom: 8px; }
   .cqa-nav { order: 3; flex-basis: 100%; }
@@ -255,8 +256,78 @@
 /* Плавная смена темы и подъём строк при наведении. */
 .cqa-app, .cqa-app .cqa-card, .cqa-app .cqa-tile, .cqa-app .cqa-list { transition: background-color var(--cqa-dur) ease, border-color var(--cqa-dur) ease, color var(--cqa-dur) ease; }
 
+/* Ползунок под активным разделом переезжает к выбранному пункту. */
+.cqa-nav { position: relative; }
+.cqa-nav.has-ink a.is-active { box-shadow: none; }
+.cqa-nav__ink { position: absolute; bottom: 0; left: 0; height: 2px; width: 0; border-radius: 2px;
+  background: var(--cqa-green-fg); pointer-events: none;
+  transition: transform var(--cqa-dur) var(--cqa-ease), width var(--cqa-dur) var(--cqa-ease); }
+@media (max-width: 900px) { .cqa-nav__ink { display: none; } .cqa-nav.has-ink a.is-active { box-shadow: inset 0 -2px 0 var(--cqa-green-fg); } }
+
+/* Строки списков и ответы критериев появляются по очереди сразу после перехода на экран
+   (класс is-entering живёт меньше секунды, поэтому автообновление списков не мигает). */
+@keyframes cqa-pill-pop { 0% { opacity: 0; transform: scale(.6); } 70% { transform: scale(1.08); } 100% { opacity: 1; transform: none; } }
+.is-entering .cqa-list > .cqa-list__row:not(.cqa-list__head),
+.is-entering .cqa-list > div > .cqa-list__row { animation: cqa-enter var(--cqa-dur) var(--cqa-ease) both; }
+.is-entering .cqa-list .cqa-pill { animation: cqa-pill-pop 420ms var(--cqa-ease) both; animation-delay: 160ms; }
+.is-entering .cqa-list > :nth-child(2) { --i: 1; }
+.is-entering .cqa-list > :nth-child(3) { --i: 2; }
+.is-entering .cqa-list > :nth-child(4) { --i: 3; }
+.is-entering .cqa-list > :nth-child(5) { --i: 4; }
+.is-entering .cqa-list > :nth-child(6) { --i: 5; }
+.is-entering .cqa-list > :nth-child(7) { --i: 6; }
+.is-entering .cqa-list > :nth-child(8) { --i: 7; }
+.is-entering .cqa-list > :nth-child(9) { --i: 8; }
+.is-entering .cqa-list > :nth-child(10) { --i: 9; }
+.is-entering .cqa-list > :nth-child(11) { --i: 10; }
+.is-entering .cqa-list > :nth-child(12) { --i: 11; }
+.is-entering .cqa-list > * .cqa-list__row, .is-entering .cqa-list > .cqa-list__row { animation-delay: calc(var(--i, 0) * 35ms); }
+.is-entering .cqa-list > * .cqa-pill { animation-delay: calc(160ms + var(--i, 0) * 35ms); }
+
+/* Отклик на наведение: плитки чуть приподнимаются, у строки появляется акцентная кромка. */
+.cqa-tile { transition: transform var(--cqa-dur) var(--cqa-ease), box-shadow var(--cqa-dur) var(--cqa-ease); }
+.cqa-tile:hover { transform: translateY(-2px); box-shadow: 0 6px 18px -10px color-mix(in srgb, var(--cqa-green-fg) 45%, transparent); }
+.cqa-list__row:not(.cqa-list__head) { transition: background var(--cqa-transition), box-shadow var(--cqa-dur) var(--cqa-ease); }
+.cqa-list__row:not(.cqa-list__head):hover { box-shadow: inset 3px 0 0 var(--cqa-green-fg); }
+.cqa-list__row .cqa-pill { transition: transform var(--cqa-dur) var(--cqa-ease); }
+.cqa-list__row:hover .cqa-pill { transform: scale(1.06); }
+
+/* «Волна» от точки нажатия на кнопке. */
+.cqa-btn { position: relative; overflow: hidden; }
+@keyframes cqa-ripple { from { opacity: .35; transform: translate(-50%, -50%) scale(0); } to { opacity: 0; transform: translate(-50%, -50%) scale(1); } }
+.cqa-ripple { position: absolute; width: var(--d, 200px); height: var(--d, 200px); border-radius: 50%;
+  background: currentColor; pointer-events: none; animation: cqa-ripple 520ms ease-out forwards; }
+
+/* Уведомление показывает, сколько ему осталось висеть. */
+.cqa-toast { overflow: hidden; }
+.cqa-toast::after { content: ""; position: absolute; left: 0; bottom: 0; height: 2px; width: 100%;
+  background: currentColor; opacity: .35; transform-origin: left center; animation: cqa-shrink var(--life, 3500ms) linear both; }
+@keyframes cqa-shrink { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+.cqa-toast.is-leaving { animation: cqa-leave 200ms ease both; }
+@keyframes cqa-leave { to { opacity: 0; transform: translateX(24px); } }
+
+/* Пометка «+N новых» и счётчик апелляций привлекают внимание, когда меняются. */
+@keyframes cqa-ring { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, currentColor 50%, transparent); } 100% { box-shadow: 0 0 0 10px transparent; } }
+@keyframes cqa-bump { 0% { transform: scale(1); } 40% { transform: scale(1.3); } 100% { transform: scale(1); } }
+.cqa-app [data-role=new]:not([hidden]) { animation: cqa-ring 1.4s ease-out 3; }
+.is-bump { animation: cqa-bump 420ms var(--cqa-ease); }
+
+/* Логотип и переключатель темы. */
+.cqa-logo svg { transition: transform var(--cqa-dur-slow) var(--cqa-ease); }
+.cqa-logo:hover svg { transform: rotate(-12deg) scale(1.08); }
+@keyframes cqa-spin-in { from { transform: rotate(-120deg) scale(.4); opacity: 0; } to { transform: none; opacity: 1; } }
+.cqa-icon-btn.is-spin svg { animation: cqa-spin-in 420ms var(--cqa-ease); }
+
+/* Обновлённый итог (после решения по апелляции или переоценки) коротко светится. */
+@keyframes cqa-glow { 0% { text-shadow: 0 0 0 transparent; } 30% { text-shadow: 0 0 18px color-mix(in srgb, currentColor 70%, transparent); } 100% { text-shadow: 0 0 0 transparent; } }
+.is-glow { animation: cqa-glow 1.2s ease; }
+
+/* Пустые состояния: иконка мягко «дышит». */
+@keyframes cqa-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+.cqa-empty svg { animation: cqa-float 3s ease-in-out infinite; }
+
 @media (prefers-reduced-motion: reduce) {
-  .cqa-app *, .cqa-app *::before, .cqa-app *::after, .cqa-modal-backdrop, .cqa-toast {
+  .cqa-app *, .cqa-app *::before, .cqa-app *::after, .cqa-modal-backdrop, .cqa-toast, .cqa-toast::after {
     animation-duration: .01ms !important; animation-iteration-count: 1 !important;
     animation-delay: 0ms !important; transition-duration: .01ms !important;
   }

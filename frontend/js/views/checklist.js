@@ -3,6 +3,7 @@
 
 import { api } from "../api.js";
 import { $, esc, freshRoot, num, on, plural } from "../dom.js";
+import { t } from "../i18n.js";
 import { icon } from "../icons.js";
 import { can } from "../session.js";
 import { modal, toast, trackJob } from "../ui.js";
@@ -56,14 +57,17 @@ function draw(ctx) {
     <div class="cqa-list">
       ${draft.criteria.slice().sort((a, b) => (a.order ?? 0) - (b.order ?? 0)).map((c) => criterionRow(ctx, c)).join("")}
     </div>
-    <div style="margin-top:12px"><button class="cqa-btn" data-action="add">${icon("plus")} Добавить критерий</button></div>`;
+    <div class="row" style="margin-top:12px;flex-wrap:wrap">
+      <button class="cqa-btn" data-action="add">${icon("plus")} Добавить вручную</button>
+      <button class="cqa-btn cqa-btn--primary" data-action="add-ai">${icon("refresh")} Создать с помощью ИИ</button>
+    </div>`;
   if (!can("edit_checklist")) makeReadOnly(ctx.el);
 }
 
 /** Просмотр без прав на изменение: поля недоступны, кнопок изменения нет. */
 function makeReadOnly(el) {
   el.querySelectorAll("[data-form] input, [data-form] select, [data-form] textarea").forEach((f) => { f.disabled = true; });
-  el.querySelectorAll('[data-action="save"], [data-action="add"], [data-action="remove"], [data-action="add-step"], '
+  el.querySelectorAll('[data-action="save"], [data-action="add"], [data-action="add-ai"], [data-action="remove"], [data-action="add-step"], '
     + '[data-action="remove-step"], [data-action="apply"]').forEach((b) => b.remove());
   el.querySelector(".cqa-page-head")?.insertAdjacentHTML("afterend",
     `<div class="cqa-banner" style="margin-bottom:16px">${icon("user")} Только просмотр: чек-лист меняет администратор системы.</div>`);
@@ -164,7 +168,7 @@ function bind(ctx) {
     draw(ctx);
   });
   on(el, "change", "[data-role=version]", (e, sel) => {
-    if (ctx.dirty && !confirm("Несохранённые изменения пропадут. Открыть другую версию?")) {
+    if (ctx.dirty && !confirm(t("Несохранённые изменения пропадут. Открыть другую версию?"))) {
       sel.value = ctx.base.version;
       return;
     }
@@ -205,11 +209,12 @@ function bind(ctx) {
   });
   on(el, "click", "[data-action=remove]", (e, btn) => {
     const c = criterion(btn);
-    if (!confirm(`Удалить критерий «${c.title}»?`)) return;
+    if (!confirm(`${t("Удалить критерий")} «${c.title}»?`)) return;
     ctx.draft.criteria = ctx.draft.criteria.filter((x) => x !== c);
     ctx.open = null;
     touch(true);
   });
+  on(el, "click", "[data-action=add-ai]", () => aiCriterionDialog(ctx, touch));
   on(el, "click", "[data-action=add]", () => {
     const c = newCriterion(ctx.draft);
     ctx.draft.criteria.push(c);
@@ -234,6 +239,39 @@ function changeType(c, type) {
   } else {
     c.is_critical_flag = false;
   }
+}
+
+/** Критерий по названию и описанию: модель предлагает тип, шкалу, N/A и подпункты — вы проверяете и сохраняете. */
+async function aiCriterionDialog(ctx, touch) {
+  const { saved_at: _, ...draftChecklist } = ctx.draft;
+  const criterion = await modal({
+    title: "Новый критерий с помощью ИИ",
+    submitLabel: "Сгенерировать",
+    body: `
+      <label class="cqa-field"><span>Название</span>
+        <input class="cqa-input" name="title" required maxlength="200" placeholder="Рассказать про промо"></label>
+      <label class="cqa-field"><span>Что проверяем</span>
+        <textarea class="cqa-textarea" name="description" rows="3" required maxlength="2000"
+          placeholder="Оператор рассказал клиенту о текущей акции, если клиент спрашивал о тарифах или комиссиях"></textarea></label>
+      <label class="cqa-field" style="max-width:160px"><span>Вес</span>
+        <input class="cqa-input" type="number" name="weight" min="0" max="100" step="1" value="5"></label>
+      <p class="small muted">Модель предложит тип ответа, шкалу, правило N/A и подпункты проверки по образцу текущих критериев. Критерий не сохранится сам — проверьте его и нажмите «Сохранить версию».</p>`,
+    async onSubmit(form) {
+      form.querySelector("[type=submit]").textContent = "Модель думает…";
+      return api.draftCriterion(ctx.base.id, {
+        title: form.title.value.trim(),
+        description: form.description.value.trim(),
+        weight: Number(form.weight.value || 0),
+        checklist: draftChecklist,
+      });
+    },
+  });
+  if (!criterion) return;
+  ctx.draft.criteria.push(criterion);
+  ctx.open = criterion.id;
+  touch(true);
+  toast(`Критерий «${criterion.title}» создан — проверьте поля и сохраните версию`);
+  ctx.el.querySelector(`[data-crit="${CSS.escape(criterion.id)}"]`)?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function newCriterion(draft) {

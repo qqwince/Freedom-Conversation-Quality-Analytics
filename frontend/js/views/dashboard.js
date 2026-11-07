@@ -209,7 +209,7 @@ function criticalRow(c) {
     <div class="grow">
       <div><b style="font-weight:500">${esc(c.conversation_id)}</b> <span class="small faint">· ${esc(c.operator)} · ${esc(c.department_title)}</span></div>
       <div class="small cqa-bad">${esc(kinds)}</div>
-      <div class="small muted" style="margin-top:2px">${esc(c.reason)}</div>
+      <div class="small muted" style="margin-top:2px" data-i18n-skip>${esc(c.reason)}</div>
     </div>
     <span class="${totalTone(c.total)}" style="font-weight:600">${total(c.total)}</span>
   </div>`;

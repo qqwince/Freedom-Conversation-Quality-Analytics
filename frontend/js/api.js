@@ -80,6 +80,8 @@ export const api = {
     }
     return checklistCache.get(key);
   },
+  draftCriterion: (checklistId, body) =>
+    request("POST", `/api/checklists/${encodeURIComponent(checklistId)}/draft-criterion`, body),
   saveChecklist: (checklist) => request("PUT", `/api/checklists/${encodeURIComponent(checklist.id)}`, checklist),
 
   evaluate: (body) => request("POST", "/api/evaluations", body),

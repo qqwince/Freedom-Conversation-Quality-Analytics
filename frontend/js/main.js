@@ -3,7 +3,9 @@
 
 import { api, configureApi, setApiUser } from "./api.js";
 import { esc } from "./dom.js";
+import { currentLang, LANGS, setLang, startTranslating } from "./i18n.js";
 import { LOGO, icon } from "./icons.js";
+import { reducedMotion, replay } from "./motion.js";
 import { applyTheme, currentTheme, THEMES } from "./theme.js";
 import { can, session, setSession, storedUserId, storeUserId } from "./session.js";
 import { markNewSeen, newConversationIds, onNewConversations, refreshSync, startSyncPolling } from "./sync.js";
@@ -59,6 +61,7 @@ async function mount(root) {
   setUiHost(root);
   root.classList.add("cqa-app");
   applyTheme(currentTheme(), root);
+  startTranslating(root);
   await loadSession();
 
   root.innerHTML = `
@@ -69,6 +72,8 @@ async function mount(root) {
         <a class="cqa-pill cqa-pill--good" data-role="new" href="#/conversations?new" hidden title="Новые диалоги из API организаторов"></a>
         <div class="cqa-job" data-role="job" hidden></div>
         <select class="cqa-select cqa-user" data-role="user" aria-label="Вы вошли как"></select>
+        <select class="cqa-select cqa-lang" data-role="lang" aria-label="Язык интерфейса">${LANGS.map((l) =>
+          `<option value="${l.id}" ${l.id === currentLang() ? "selected" : ""}>${l.label}</option>`).join("")}</select>
         <button class="cqa-icon-btn" data-role="theme" title="Тема оформления" aria-label="Тема оформления"></button>
       </div>
     </header>
@@ -81,7 +86,9 @@ async function mount(root) {
     root.querySelector("[data-role=home]").href = homeRoute();
     root.querySelector("[data-role=nav]").innerHTML = NAV.filter((n) => n.visible()).map((n) =>
       `<a href="${n.href}" data-nav="${n.id}">${esc(n.label)}${n.id === "appeals"
-        ? ' <span class="cqa-pill cqa-pill--bad cqa-pill--sm" data-role="appeals-count" hidden></span>' : ""}</a>`).join("");
+        ? ' <span class="cqa-pill cqa-pill--bad cqa-pill--sm" data-role="appeals-count" hidden></span>' : ""}</a>`).join("")
+      + '<span class="cqa-nav__ink" aria-hidden="true"></span>';
+    root.querySelector("[data-role=nav]").classList.add("has-ink");
     // Пользователи сгруппированы по ролям — сразу видно, кем вы смотрите систему.
     const roles = [...new Set(users.map((u) => u.role_title))];
     root.querySelector("[data-role=user]").innerHTML = roles.map((role) => `<optgroup label="${esc(role)}">${users
@@ -108,10 +115,13 @@ async function mount(root) {
       return;
     }
     root.querySelectorAll("[data-nav]").forEach((a) => a.classList.toggle("is-active", a.dataset.nav === match.r.nav));
+    moveInk(root);
     view.innerHTML = SKELETON;
     window.scrollTo(0, 0);
     try {
+      view.classList.add("is-entering");     // строки списков появляются по очереди только сразу после перехода
       await match.r.render(view, match.m.slice(1));
+      setTimeout(() => view.classList.remove("is-entering"), 900);
     } catch (err) {
       view.innerHTML = `<div class="cqa-empty"><h3>Не удалось загрузить</h3><p>${esc(err.message)}</p></div>`;
     }
@@ -125,10 +135,12 @@ async function mount(root) {
     location.hash = homeRoute();
     route();
   });
+  root.querySelector("[data-role=lang]").addEventListener("change", (event) => setLang(event.target.value));
   root.querySelector("[data-role=theme]").addEventListener("click", () => {
     const index = THEMES.findIndex((t) => t.id === currentTheme());
     applyTheme(THEMES[(index + 1) % THEMES.length].id, root);
     drawHeader();
+    replay(root.querySelector("[data-role=theme]"), "is-spin");
   });
 
   window.addEventListener("cqa:new-build", () => {
@@ -139,6 +151,8 @@ async function mount(root) {
     root.prepend(bar);
   });
   window.addEventListener("hashchange", route);
+  window.addEventListener("resize", () => moveInk(root));
+  root.addEventListener("pointerdown", ripple);
   window.addEventListener("cqa:appeals-changed", () => refreshAppealsCount(root));
   onJobs((jobs) => renderJobs(root.querySelector("[data-role=job]"), jobs));
   onNewConversations((ids) => {
@@ -160,11 +174,36 @@ async function refreshAppealsCount(root) {
   if (!badge) return;
   try {
     const open = await api.appeals("open");
+    if (badge.textContent !== "" && badge.textContent !== String(open.length)) replay(badge, "is-bump");
     badge.textContent = open.length;
     badge.hidden = open.length === 0;
   } catch {
     badge.hidden = true;
   }
+}
+
+/** Ползунок активного раздела: переезжает под выбранный пункт меню. */
+function moveInk(root) {
+  const nav = root.querySelector("[data-role=nav]");
+  const ink = nav?.querySelector(".cqa-nav__ink");
+  const active = nav?.querySelector("a.is-active");
+  if (!ink) return;
+  ink.style.width = active ? `${active.offsetWidth}px` : "0";
+  ink.style.transform = active ? `translateX(${active.offsetLeft}px)` : "";
+}
+
+/** «Волна» от точки нажатия на кнопке. */
+function ripple(event) {
+  const btn = event.target.closest(".cqa-btn");
+  if (!btn || btn.disabled || reducedMotion()) return;
+  const rect = btn.getBoundingClientRect();
+  const wave = document.createElement("span");
+  wave.className = "cqa-ripple";
+  wave.style.left = `${event.clientX - rect.left}px`;
+  wave.style.top = `${event.clientY - rect.top}px`;
+  wave.style.setProperty("--d", `${Math.max(rect.width, rect.height) * 2.2}px`);
+  btn.append(wave);
+  wave.addEventListener("animationend", () => wave.remove());
 }
 
 function renderJobs(el, jobs) {

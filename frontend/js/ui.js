@@ -14,8 +14,13 @@ export function toast(message, kind = "info") {
   el.className = `cqa-toast ${kind === "error" ? "cqa-toast--error" : ""}`;
   el.setAttribute("role", kind === "error" ? "alert" : "status");
   el.textContent = message;
+  const life = kind === "error" ? 6000 : 3500;
+  el.style.setProperty("--life", `${life}ms`);
   host.appendChild(el);
-  setTimeout(() => el.remove(), kind === "error" ? 6000 : 3500);
+  setTimeout(() => {
+    el.classList.add("is-leaving");
+    setTimeout(() => el.remove(), 200);
+  }, life);
 }
 
 /**

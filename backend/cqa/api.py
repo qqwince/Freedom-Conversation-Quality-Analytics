@@ -27,6 +27,7 @@ from cqa.coach import CoachLimitError
 from cqa.coach import ask as ask_coach
 from cqa.coach import build_context as build_coach_context
 from cqa.config import PROJECT_ROOT, get_settings
+from cqa.criterion_draft import draft_criterion
 from cqa.feedback import build_feedback
 from cqa.llm import LLMError, create_provider
 from cqa.models import Conversation
@@ -73,6 +74,13 @@ class CoachRequest(BaseModel):
     question: str = Field(min_length=1, max_length=2000)
     history: list[CoachMessage] = Field(default_factory=list)
     operator: str | None = Field(default=None, description="Для руководителя: о каком операторе спрашивать")
+
+
+class CriterionDraftRequest(BaseModel):
+    title: str = Field(min_length=1, max_length=200)
+    description: str = Field(min_length=1, max_length=2000)
+    weight: float = Field(default=10, ge=0, le=100)
+    checklist: dict[str, Any] | None = Field(default=None, description="Несохранённый черновик чек-листа из редактора")
 
 
 class SyncRequest(BaseModel):
@@ -255,6 +263,17 @@ def create_app(service: CQAService | None = None, start_sync: bool | None = None
     @app.get("/api/checklists/{checklist_id}")
     def checklist(checklist_id: str, user: CurrentUser, version: int | None = None) -> dict[str, Any]:
         return service.storage.get_checklist(checklist_id, version)
+
+    @app.post("/api/checklists/{checklist_id}/draft-criterion")
+    def draft_new_criterion(checklist_id: str, body: CriterionDraftRequest, user: CurrentUser) -> dict[str, Any]:
+        """Черновик критерия по названию и описанию — для проверки в редакторе, не сохраняется."""
+        require(user, Permission.EDIT_CHECKLIST)
+        checklist = body.checklist or service.storage.get_checklist(checklist_id)
+        try:
+            return draft_criterion(checklist, body.title, body.description, body.weight,
+                                   lambda: service._provider_factory(None))
+        except ValueError as exc:
+            raise ServiceError(str(exc)) from exc
 
     @app.put("/api/checklists/{checklist_id}")
     def save_checklist(checklist_id: str, body: dict[str, Any], user: CurrentUser) -> dict[str, Any]:

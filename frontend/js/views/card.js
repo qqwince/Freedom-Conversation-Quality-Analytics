@@ -96,6 +96,7 @@ function animateTotal(ctx, value) {
   if (!hero || value == null) return;
   const from = ctx.shownTotal ?? 0;
   ctx.shownTotal = value;
+  if (from && from !== value) replay(hero, "is-glow");   // итог изменился, а не просто открылся
   countUp(from, value, (v) => {
     const [whole, cents] = v.toFixed(2).split(".");
     hero.innerHTML = `${whole}<small>.${cents}</small>`;
@@ -222,7 +223,7 @@ function criterionDetails(criterion, r, appeals, ctx) {
       ? `Вес ${num(criterion.weight)} → ${num(r.effective_weight)} после перераспределения N/A` : `Вес ${num(criterion.weight)}`;
   const reasoning = r.checks?.length ? `
     <details class="small"><summary class="faint" style="cursor:pointer">Как модель проверяла</summary>
-      <div class="stack" style="gap:6px;margin-top:8px">${r.checks.map((c) => `
+      <div class="stack" style="gap:6px;margin-top:8px" data-i18n-skip>${r.checks.map((c) => `
         <div><span class="faint">${esc(c.q)}</span><br>${esc(c.a)}${c.msg?.length ? ` <span class="faint">· ${c.msg.map((m) => `[${turn(m)}]`).join(" ")}</span>` : ""}</div>`).join("")}
       </div></details>` : "";
   const pending = reviewNotes(r);
@@ -230,8 +231,8 @@ function criterionDetails(criterion, r, appeals, ctx) {
   const openAppeal = appeals.find((a) => a.status === "open");
   const decided = appeals.filter((a) => a.status !== "open");
   return `
-    <p class="muted">${esc(r.explanation || "Объяснения нет.")}</p>
-    ${r.na_reason && r.answer === "na" ? `<p class="small"><span class="faint">Почему N/A:</span> ${esc(r.na_reason)}</p>` : ""}
+    <p class="muted"${r.explanation ? " data-i18n-skip" : ""}>${esc(r.explanation || "Объяснения нет.")}</p>
+    ${r.na_reason && r.answer === "na" ? `<p class="small"><span class="faint">Почему N/A:</span> <span data-i18n-skip>${esc(r.na_reason)}</span></p>` : ""}
     ${evidence || range ? `<div class="row" style="flex-wrap:wrap;gap:6px">${evidence}${range}</div>` : ""}
     ${notes}
     ${reasoning}
