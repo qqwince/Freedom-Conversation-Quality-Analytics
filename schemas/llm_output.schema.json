@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "cqa/llm_output.schema.json",
+  "title": "LLM evaluation output",
+  "description": "Ответ модели по одному диалогу. Баллы модель НЕ считает — только ответ, подпункты и доказательства. Итог считает модуль scoring.",
+  "type": "object",
+  "required": ["results"],
+  "properties": {
+    "results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["criterion_id", "checks", "answer", "evidence", "explanation"],
+        "properties": {
+          "criterion_id": { "type": "string" },
+          "checks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["q", "a"],
+              "properties": {
+                "q": { "type": "string" },
+                "a": { "type": "string" },
+                "msg": { "type": "array", "items": { "type": "integer" } }
+              }
+            }
+          },
+          "answer": {
+            "description": "binary: yes | no | na; scale: число из steps или na; flag: yes | no",
+            "oneOf": [
+              { "enum": ["yes", "no", "na"] },
+              { "type": "number" }
+            ]
+          },
+          "flag_subtypes": {
+            "type": "array",
+            "description": "Только для flag: найденные подтипы.",
+            "items": { "type": "string" }
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["msg_idx", "proves"],
+              "properties": {
+                "msg_idx": { "type": "integer", "minimum": 0 },
+                "proves": { "type": "string" }
+              }
+            }
+          },
+          "expected_at": {
+            "description": "Для пропущенного действия: проверенный участок, где действие ожидалось.",
+            "type": ["object", "null"],
+            "properties": {
+              "from_msg_idx": { "type": "integer" },
+              "to_msg_idx": { "type": "integer" }
+            }
+          },
+          "na_reason": { "type": ["string", "null"] },
+          "explanation": { "type": "string" }
+        }
+      }
+    }
+  }
+}
