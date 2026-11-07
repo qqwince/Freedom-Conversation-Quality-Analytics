@@ -196,3 +196,68 @@
   .cqa-msg { max-width: 100%; }
   .cqa-hide-sm { display: none; }
 }
+
+/* --- Анимации ------------------------------------------------------------------------------
+   Только transform и opacity. При «уменьшении движения» в системе всё отключается. */
+
+@keyframes cqa-enter { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes cqa-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes cqa-pop { from { opacity: 0; transform: scale(.96) translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes cqa-slide-in { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: none; } }
+@keyframes cqa-fill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes cqa-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+@keyframes cqa-pulse {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--cqa-green-fg) 55%, transparent); }
+  100% { box-shadow: 0 0 0 12px transparent; }
+}
+@keyframes cqa-shimmer { from { background-position: -200% 0; } to { background-position: 200% 0; } }
+
+/* Экран появляется при каждом переходе: корень экрана создаётся заново (freshRoot). */
+.cqa-main > div { animation: cqa-enter var(--cqa-dur) var(--cqa-ease) both; }
+
+/* Поочерёдное появление: style="--i: N" */
+.cqa-stagger { animation: cqa-enter var(--cqa-dur) var(--cqa-ease) both; animation-delay: calc(var(--i, 0) * var(--cqa-stagger)); }
+
+/* Раскрытие критерия, диалога, журнала — анимация перезапускается при каждом показе. */
+.cqa-reveal:not([hidden]) { animation: cqa-enter var(--cqa-dur) var(--cqa-ease) both; }
+.cqa-chevron { transition: transform var(--cqa-dur) var(--cqa-ease); }
+
+/* Подсветка реплики при переходе по доказательству: короткая «волна» вокруг сообщения. */
+.cqa-msg.is-hl.is-pulse, .cqa-msg.is-range.is-pulse { animation: cqa-pulse 1.1s var(--cqa-ease) 2; }
+
+/* Полосы соблюдения критериев заполняются слева направо по очереди. */
+.cqa-bar-fill { transform-origin: left center; animation: cqa-fill var(--cqa-dur-slow) var(--cqa-ease) both;
+  animation-delay: calc(var(--i, 0) * 70ms); }
+
+/* Кривая распределения прорисовывается, заливка и точки проявляются следом. */
+.cqa-draw { stroke-dasharray: 1; animation: cqa-draw 1s var(--cqa-ease) both; }
+.cqa-chart-area { animation: cqa-fade .6s ease .5s both; }
+.cqa-chart-dot { animation: cqa-fade .3s ease both; animation-delay: calc(.35s + var(--i, 0) * 60ms); }
+
+/* Окна и уведомления. */
+.cqa-modal-backdrop { animation: cqa-fade var(--cqa-dur-fast) ease both; }
+.cqa-modal { animation: cqa-pop var(--cqa-dur) var(--cqa-ease) both; }
+.cqa-toast { animation: cqa-slide-in var(--cqa-dur) var(--cqa-ease) both; }
+
+/* Скелет экрана во время загрузки вместо пустоты. */
+.cqa-skeleton { display: grid; gap: 14px; }
+.cqa-skeleton div:not(.cqa-tiles) { border-radius: var(--cqa-radius); height: 18px;
+  background: linear-gradient(90deg, var(--cqa-surface-1) 25%, var(--cqa-surface-3) 50%, var(--cqa-surface-1) 75%);
+  background-size: 200% 100%; animation: cqa-shimmer 1.4s linear infinite; }
+.cqa-skeleton .is-title { height: 30px; width: 40%; }
+.cqa-skeleton .is-tile { height: 76px; }
+.cqa-skeleton .is-row { height: 52px; }
+
+/* Идущая оценка: по полосе прогресса бежит блик. */
+.cqa-progress.is-active > div { background: linear-gradient(90deg, var(--cqa-green) 0%, var(--cqa-green-fg) 50%, var(--cqa-green) 100%);
+  background-size: 200% 100%; animation: cqa-shimmer 1.2s linear infinite; }
+
+/* Плавная смена темы и подъём строк при наведении. */
+.cqa-app, .cqa-app .cqa-card, .cqa-app .cqa-tile, .cqa-app .cqa-list { transition: background-color var(--cqa-dur) ease, border-color var(--cqa-dur) ease, color var(--cqa-dur) ease; }
+
+@media (prefers-reduced-motion: reduce) {
+  .cqa-app *, .cqa-app *::before, .cqa-app *::after, .cqa-modal-backdrop, .cqa-toast {
+    animation-duration: .01ms !important; animation-iteration-count: 1 !important;
+    animation-delay: 0ms !important; transition-duration: .01ms !important;
+  }
+}

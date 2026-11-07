@@ -49,6 +49,13 @@
   --cqa-pad-x: 24px;
   --cqa-content-width: 1080px;
   --cqa-transition: 160ms ease;
+
+  /* Движение: коротко и с плавным замедлением — корпоративно, без «игровых» эффектов */
+  --cqa-dur-fast: 150ms;
+  --cqa-dur: 240ms;
+  --cqa-dur-slow: 700ms;
+  --cqa-ease: cubic-bezier(.2, .8, .2, 1);
+  --cqa-stagger: 45ms;
 }
 
 /* Светлая тема: те же смыслы цветов, корпоративная светлая палитра. */

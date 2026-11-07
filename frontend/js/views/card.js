@@ -5,6 +5,7 @@ import { api } from "../api.js";
 import { $, $$, esc, formatDate, formatOffset, freshRoot, num, on, plural, total, turn } from "../dom.js";
 import { icon } from "../icons.js";
 import { CHANNEL, SPEAKER, evidenceOf, pill, reviewNotes, sectionTone, totalTone } from "../labels.js";
+import { countUp, replay, staggerStyle } from "../motion.js";
 import { can } from "../session.js";
 import { toast } from "../ui.js";
 import { startEvaluation } from "./conversations.js";
@@ -65,6 +66,9 @@ async function draw(ctx) {
   if (!hasDecisions) ctx.mode = "original";
   const view = ctx.mode === "final" ? finalView(evaluation, final) : originalView(evaluation);
   const wasOpen = $("[data-section=dialog]", el)?.classList.contains("is-open");
+  // Критерии появляются по очереди только при первом показе оценки, не при каждом переключении.
+  ctx.animateList = ctx.animatedFor !== ctx.evaluationId;
+  ctx.animatedFor = ctx.evaluationId;
 
   el.innerHTML = `
     ${header(conv, evaluation, conv.evaluations, ctx.evaluationId)}
@@ -78,11 +82,24 @@ async function draw(ctx) {
     <div class="cqa-list" style="margin-top:20px">
       ${checklist.criteria
         .slice().sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
-        .map((c) => criterionHtml(c, view, final, ctx))
+        .map((c, i) => criterionHtml(c, view, final, ctx, i))
         .join("")}
     </div>
     ${dialogSection(conv, wasOpen)}
     ${logSection()}`;
+  animateTotal(ctx, view.total);
+}
+
+/** Итог «набегает» при открытии и плавно перетекает при переключении «Исходная / После апелляции». */
+function animateTotal(ctx, value) {
+  const hero = $("[data-role=hero]", ctx.el);
+  if (!hero || value == null) return;
+  const from = ctx.shownTotal ?? 0;
+  ctx.shownTotal = value;
+  countUp(from, value, (v) => {
+    const [whole, cents] = v.toFixed(2).split(".");
+    hero.innerHTML = `${whole}<small>.${cents}</small>`;
+  });
 }
 
 // --- Заголовок и итог -------------------------------------------------------------------
@@ -109,8 +126,8 @@ function header(conv, evaluation, history, currentId) {
 }
 
 function summary(view, final, hasDecisions, mode) {
-  const sections = view.sections.map((s) => `
-    <div class="cqa-tile">
+  const sections = view.sections.map((s, i) => `
+    <div class="cqa-tile cqa-stagger" style="${staggerStyle(i + 1)}">
       <div class="cqa-tile__label">${esc(s.title)}</div>
       <div class="cqa-tile__value ${sectionTone(s.points, s.max)}">${num(s.points, 1)}<span> / ${num(s.max, 1)}</span></div>
     </div>`).join("");
@@ -124,7 +141,7 @@ function summary(view, final, hasDecisions, mode) {
   return `
     <div class="row" style="align-items:flex-end;gap:28px;flex-wrap:wrap">
       <div>
-        <div class="cqa-hero ${totalTone(view.total)}">${view.total == null ? "—" : `${Math.trunc(view.total)}<small>.${total(view.total).split(".")[1]}</small>`}</div>
+        <div class="cqa-hero ${totalTone(view.total)}" data-role="hero">${view.total == null ? "—" : `${Math.trunc(view.total)}<small>.${total(view.total).split(".")[1]}</small>`}</div>
         <div class="small faint" style="margin-top:6px">${view.total == null ? esc(view.error ?? "итог не рассчитан") : "из 100 баллов"}
           ${mode === "final" && delta ? ` · <span class="${delta > 0 ? "cqa-good" : "cqa-bad"}">${delta > 0 ? "+" : ""}${num(delta)} после апелляции</span>` : ""}</div>
       </div>
@@ -162,7 +179,7 @@ function finalView(ev, final) {
 
 // --- Критерии ---------------------------------------------------------------------------
 
-function criterionHtml(criterion, view, final, ctx) {
+function criterionHtml(criterion, view, final, ctx, index = 0) {
   const result = ctx.evaluation.results.find((r) => r.criterion_id === criterion.id);
   if (!result) return "";
   const answer = view.answer(result);
@@ -180,14 +197,14 @@ function criterionHtml(criterion, view, final, ctx) {
     changed ? `<span class="cqa-pill cqa-pill--na cqa-pill--sm">изменено</span>` : "",
   ].join(" ");
   return `
-    <div data-crit="${esc(criterion.id)}" class="${open ? "is-open" : ""}">
+    <div data-crit="${esc(criterion.id)}" class="${open ? "is-open" : ""} ${ctx.animateList ? "cqa-stagger" : ""}" style="${staggerStyle(index + 3)}">
       <div class="cqa-list__row ${open ? "is-open" : ""}">
         <span class="grow" style="font-weight:500">${esc(criterion.title)} ${marks}</span>
         ${pill(criterion, answer)}
         <span class="cqa-score">${score}</span>
         <span class="cqa-chevron">${icon("chevron")}</span>
       </div>
-      <div class="stack" style="padding:0 20px 18px;gap:14px" ${open ? "" : "hidden"}>
+      <div class="stack cqa-reveal" style="padding:0 20px 18px;gap:14px" ${open ? "" : "hidden"}>
         ${criterionDetails(criterion, result, appeals, ctx)}
       </div>
     </div>`;
@@ -343,7 +360,7 @@ function dialogSection(conv, open) {
         <span class="small faint">${conv.transcript.length} ${plural(conv.transcript.length, "реплика", "реплики", "реплик")}</span>
         <span class="cqa-chevron">${icon("chevron")}</span>
       </div>
-      <div data-role="dialog-body" class="stack" style="padding:4px 20px 20px;gap:6px" ${open ? "" : "hidden"}>
+      <div data-role="dialog-body" class="stack cqa-reveal" style="padding:4px 20px 20px;gap:6px" ${open ? "" : "hidden"}>
         ${isCall && conv.has_audio ? `<audio controls preload="none" data-role="audio" style="width:100%;margin-bottom:8px" src="${esc(api.audioUrl(conv.conversation_id))}"></audio>
           <p class="xs faint" style="margin:-4px 0 8px">Нажмите на время реплики, чтобы прослушать с этого места.</p>` : ""}
         ${messages}
@@ -362,9 +379,9 @@ function toggleSection(el, name, force) {
 
 function focusMessages(el, conv, indexes, cls) {
   toggleSection(el, "dialog", true);
-  $$(".cqa-msg", el).forEach((m) => m.classList.remove("is-hl", "is-range"));
+  $$(".cqa-msg", el).forEach((m) => m.classList.remove("is-hl", "is-range", "is-pulse"));
   const nodes = indexes.map((i) => el.querySelector(`#msg-${i}`)).filter(Boolean);
-  nodes.forEach((n) => n.classList.add(cls));
+  nodes.forEach((n) => { n.classList.add(cls); replay(n, "is-pulse"); });
   nodes[0]?.scrollIntoView({ behavior: "smooth", block: "center" });
   if (conv.channel === "voice call" && conv.has_audio) {
     const at = audioTimeline(conv.transcript).get(indexes[0]);
@@ -398,7 +415,7 @@ function logSection() {
         <span class="small faint">промпт и ответы модели</span>
         <span class="cqa-chevron">${icon("chevron")}</span>
       </div>
-      <div data-role="log-body" class="stack" style="padding:4px 20px 20px" hidden></div>
+      <div data-role="log-body" class="stack cqa-reveal" style="padding:4px 20px 20px" hidden></div>
     </div>`;
 }
 

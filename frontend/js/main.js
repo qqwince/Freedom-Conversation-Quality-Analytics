@@ -31,6 +31,13 @@ const ROUTES = [
   { pattern: /^#\/checklist$/, nav: "checklist", render: (el) => renderChecklist(el) },
 ];
 
+// Скелет экрана на время загрузки: видно, что данные идут, а не что страница пустая.
+const SKELETON = `<div class="cqa-skeleton" aria-label="Загрузка" role="status">
+  <div class="is-title"></div>
+  <div class="cqa-tiles"><div class="is-tile"></div><div class="is-tile"></div><div class="is-tile"></div></div>
+  <div class="is-row"></div><div class="is-row"></div><div class="is-row"></div><div class="is-row"></div>
+</div>`;
+
 async function loadSession() {
   setApiUser(storedUserId());
   try {
@@ -101,7 +108,7 @@ async function mount(root) {
       return;
     }
     root.querySelectorAll("[data-nav]").forEach((a) => a.classList.toggle("is-active", a.dataset.nav === match.r.nav));
-    view.innerHTML = '<div class="cqa-loading">Загрузка…</div>';
+    view.innerHTML = SKELETON;
     window.scrollTo(0, 0);
     try {
       await match.r.render(view, match.m.slice(1));
@@ -171,7 +178,7 @@ function renderJobs(el, jobs) {
   el.hidden = false;
   el.innerHTML = `
     <span>${finished ? "Оценка завершена" : "Оценка"} ${done} / ${totalCount}</span>
-    <div class="cqa-progress grow"><div style="width:${totalCount ? (done / totalCount) * 100 : 0}%"></div></div>`;
+    <div class="cqa-progress grow ${finished ? "" : "is-active"}"><div style="width:${totalCount ? (done / totalCount) * 100 : 0}%"></div></div>`;
 }
 
 const root = document.querySelector("[data-cqa-app]");

@@ -5,6 +5,7 @@ import { api } from "../api.js";
 import { esc, freshRoot, num, on, pagerHtml, paginate, plural, total } from "../dom.js";
 import { icon } from "../icons.js";
 import { totalTone } from "../labels.js";
+import { countAll, staggerStyle } from "../motion.js";
 import { session } from "../session.js";
 import { modal, toast } from "../ui.js";
 
@@ -28,15 +29,15 @@ export async function renderDashboard(container) {
     <div class="cqa-page-head"><div class="grow"><h1>Дашборд качества</h1></div></div>
     <div class="cqa-tiles" style="margin-bottom:12px">
       ${d.kpi.map(kpiTile).join("")}
-      <div class="cqa-tile"><div class="cqa-tile__label">Требуют проверки</div><div class="cqa-tile__value cqa-part">${d.summary.needs_review}</div></div>
-      <div class="cqa-tile"><div class="cqa-tile__label">Открытых апелляций</div><div class="cqa-tile__value">${d.summary.open_appeals}</div></div>
+      <div class="cqa-tile cqa-stagger" style="${staggerStyle(3)}"><div class="cqa-tile__label">Требуют проверки</div><div class="cqa-tile__value cqa-part"><span data-count="${d.summary.needs_review}">0</span></div></div>
+      <div class="cqa-tile cqa-stagger" style="${staggerStyle(4)}"><div class="cqa-tile__label">Открытых апелляций</div><div class="cqa-tile__value"><span data-count="${d.summary.open_appeals}">0</span></div></div>
     </div>
 
     <div class="cqa-dash-grid">
       <section class="cqa-card cqa-dash-card">
         <div class="row" style="margin-bottom:12px"><h2 class="grow">Соблюдение критериев</h2>
           <span class="xs faint" title="На сколько вырастет средний балл, если критерий выполнять всегда">рост балла</span></div>
-        ${d.criteria.filter((c) => c.type !== "flag").map(criterionBar).join("")}
+        ${d.criteria.filter((c) => c.type !== "flag").map((c, i) => criterionBar(c, i)).join("")}
       </section>
       <section class="cqa-card cqa-dash-card">
         <h2>Распределение итогов</h2>
@@ -66,6 +67,7 @@ export async function renderDashboard(container) {
     </section>`;
 
   bindChartHover(el.querySelector("[data-role=chart]"));
+  countAll(el);
   on(el, "click", "[data-feedback]", (e, btn) => { e.stopPropagation(); feedbackDialog(btn.dataset.feedback); });
   on(el, "click", "[data-pager=operators]", (e, btn) => {
     operatorsPage = Number(btn.dataset.page);
@@ -90,24 +92,25 @@ function criticalList(items) {
   return `<div class="cqa-list">${page.items.map(criticalRow).join("")}</div>${pagerHtml(page, "critical")}`;
 }
 
-function kpiTile(k) {
+function kpiTile(k, i) {
   const ok = k.value == null || k.target == null ? null
     : k.better === "lower" ? k.value <= k.target : k.value >= k.target;
-  const value = k.id === "avg_score" ? (k.value == null ? "—" : num(k.value, 1)) : k.value;
-  return `<div class="cqa-tile">
+  const value = k.value == null ? "—"
+    : `<span data-count="${k.value}" data-decimals="${k.id === "avg_score" ? 1 : 0}">0</span>`;
+  return `<div class="cqa-tile cqa-stagger" style="${staggerStyle(i)}">
     <div class="cqa-tile__label">${esc(k.title)}</div>
     <div class="cqa-tile__value ${ok == null ? "" : ok ? "cqa-good" : "cqa-bad"}">${value}<span> ${k.id === "compliance" ? "из" : "цель"} ${k.target ?? "—"}</span></div>
   </div>`;
 }
 
-function criterionBar(c) {
+function criterionBar(c, i) {
   const value = c.compliance ?? 0;
   const tone = value >= 90 ? "var(--cqa-green-fg)" : value >= 70 ? "var(--cqa-amber-fg)" : "var(--cqa-red-fg)";
   return `<div style="margin-bottom:10px">
     <div class="row" style="gap:8px"><span class="grow small">${esc(c.title)}</span>
       <span class="small" style="font-weight:600">${c.compliance == null ? "—" : num(c.compliance, 0) + "%"}</span>
       <span class="xs ${c.gain > 0 ? "cqa-good" : "faint"}" style="width:62px;text-align:right">${c.gain > 0 ? "+" + num(c.gain, 1) : ""}</span></div>
-    <div class="cqa-progress" style="margin-top:4px"><div style="width:${value}%;background:${tone}"></div></div>
+    <div class="cqa-progress" style="margin-top:4px"><div class="cqa-bar-fill" style="width:${value}%;background:${tone};${staggerStyle(i)}"></div></div>
   </div>`;
 }
 
@@ -167,11 +170,11 @@ function distribution(buckets, avg, target) {
       <text x="${left - 8}" y="${y(max) + 4}" text-anchor="end" class="cqa-chart-label">${max}</text>
       <text x="${left - 8}" y="${base + 4}" text-anchor="end" class="cqa-chart-label">0</text>
       ${[0, 20, 40, 60, 80, 100].map((s) => `<text x="${x(s)}" y="${h - 8}" text-anchor="middle" class="cqa-chart-label">${s}</text>`).join("")}
-      <path d="${area}" fill="var(--cqa-green)" opacity="0.22"/>
-      <path d="${line}" fill="none" stroke="var(--cqa-green-fg)" stroke-width="2" stroke-linejoin="round"/>
+      <path d="${area}" fill="var(--cqa-green)" opacity="0.22" class="cqa-chart-area"/>
+      <path d="${line}" fill="none" stroke="var(--cqa-green-fg)" stroke-width="2" stroke-linejoin="round" pathLength="1" class="cqa-draw"/>
       ${vline(target, `цель ${target}`, true, targetSide)}
       ${vline(avg, `средний ${avg == null ? "" : num(avg, 1)}`, false, avgSide)}
-      ${pts.map((p) => `<circle cx="${p.x}" cy="${p.y}" r="4.5" fill="var(--cqa-green-fg)" stroke="var(--cqa-surface-1)" stroke-width="2" data-dot="${p.b.label}"/>`).join("")}
+      ${pts.map((p, i) => `<circle cx="${p.x}" cy="${p.y}" r="4.5" fill="var(--cqa-green-fg)" stroke="var(--cqa-surface-1)" stroke-width="2" data-dot="${p.b.label}" class="cqa-chart-dot" style="${staggerStyle(i, 10)}"/>`).join("")}
       <text x="${peak.x - 8}" y="${peak.y + 4}" text-anchor="end" class="cqa-chart-value">${peak.b.count}</text>
       ${pts.map((p, i) => `<rect x="${left + i * columnW}" y="${top}" width="${columnW}" height="${base - top}" fill="transparent"
           data-bin="${i}" data-label="${esc(p.b.label)}" data-count="${p.b.count}"/>`).join("")}
