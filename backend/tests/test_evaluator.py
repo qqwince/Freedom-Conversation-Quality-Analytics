@@ -116,6 +116,16 @@ def test_identity_rule_warns_without_system_event(checklist):
     assert [i.severity for i in result.issues if i.criterion_id == "C3"] == ["warning"]
 
 
+def test_evidence_filled_from_checks_when_model_omits_it(checklist, conversation):
+    no_evidence = verdict("C1", "yes")
+    no_evidence["evidence"] = []
+    no_evidence["checks"] = [{"q": "Первая реплика оператора?", "a": "[5]", "msg": [5, 99]}]
+    parsed = LLMEvaluation.model_validate_json(response(GOOD, C1=no_evidence))
+    result = validate(parsed, checklist, conversation, extract_facts(conversation))
+    assert [(e.msg_idx, e.proves) for e in result.verdicts["C1"].evidence] == [(5, "Первая реплика оператора?")]
+    assert not [i for i in result.issues if i.criterion_id == "C1"]
+
+
 def test_partial_evaluation_has_no_total(checklist, conversation):
     provider = FakeProvider([response({"C7": "yes"})])
     ev = Evaluator(provider, votes=1).evaluate(conversation, checklist, criteria_ids=["C7"])

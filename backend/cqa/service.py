@@ -205,20 +205,26 @@ class CQAService:
                  criteria_ids: Sequence[str] | None = None, base_evaluation_id: str | None = None,
                  votes: int | None = None, model: str | None = None) -> dict[str, Any]:
         """Оценка диалога. С criteria_ids и base_evaluation_id — переоценка только этих критериев:
-        остальные ответы берутся из базовой оценки, итог пересчитывается по новому чек-листу."""
+        остальные ответы берутся из базовой оценки, итог пересчитывается по новому чек-листу.
+        Пустой criteria_ids — только пересчёт итога по новой версии, без вызова модели."""
         conversation = self.storage.get_conversation(conversation_id)
         checklist = self.storage.get_checklist(checklist_id, checklist_version)
-        evaluator = Evaluator(self._provider_factory(model), votes=votes or self.default_votes)
+
+        def evaluator() -> Evaluator:
+            return Evaluator(self._provider_factory(model), votes=votes or self.default_votes)
 
         if criteria_ids is None:
-            return self.storage.save_evaluation(evaluator.evaluate(conversation, checklist))
+            return self.storage.save_evaluation(evaluator().evaluate(conversation, checklist))
 
         if base_evaluation_id is None:
             raise ServiceError("для переоценки части критериев нужна базовая оценка")
         base = self.storage.get_evaluation(base_evaluation_id)
         if base["conversation_id"] != conversation_id:
             raise ServiceError("базовая оценка относится к другому диалогу")
-        partial = evaluator.evaluate(conversation, checklist, criteria_ids)
+        if criteria_ids:
+            partial = evaluator().evaluate(conversation, checklist, criteria_ids)
+        else:
+            partial = _rescore_only(base, checklist)
         return self.storage.save_evaluation(self._merge(base, partial, checklist))
 
     def _merge(self, base: dict[str, Any], partial: dict[str, Any], checklist: Mapping[str, Any]) -> dict[str, Any]:
@@ -252,11 +258,11 @@ class CQAService:
         if not conversation_ids:
             raise ServiceError("не выбраны диалоги")
         checklist = self.storage.get_checklist(checklist_id, checklist_version)
-        latest = self.storage.latest_evaluations() if criteria_ids else {}
+        latest = self.storage.latest_evaluations() if criteria_ids is not None else {}
 
         def run(conversation_id: str) -> dict[str, Any]:
             base = latest.get(conversation_id)
-            if criteria_ids and base is None:
+            if criteria_ids is not None and base is None:
                 # нет базовой оценки — оцениваем полностью
                 return self.evaluate(conversation_id, checklist_id, checklist["version"], votes=votes, model=model)
             return self.evaluate(conversation_id, checklist_id, checklist["version"], criteria_ids,
@@ -324,6 +330,20 @@ class CQAService:
                 "criteria": final.get("criteria", []),
             },
         }
+
+
+def _rescore_only(base: Mapping[str, Any], checklist: Mapping[str, Any]) -> dict[str, Any]:
+    """«Частичная оценка» без вызова модели: метаданные новой оценки, ответы — из базовой."""
+    return {
+        **{k: v for k, v in base.items() if k not in ("results", "log", "usage")},
+        "id": uuid.uuid4().hex,
+        "created_at": now(),
+        "checklist_id": checklist.get("id"),
+        "checklist_version": checklist.get("version"),
+        "results": [],
+        "usage": {"calls": 0, "input_tokens": 0, "output_tokens": 0, "latency_sec": 0, "cost_usd": None},
+        "log": {"system_prompt": "", "user_prompt": "", "calls": [], "note": "пересчёт итога без вызова модели"},
+    }
 
 
 def conversation_summary(conv: Conversation, evaluation: Mapping[str, Any] | None) -> dict[str, Any]:

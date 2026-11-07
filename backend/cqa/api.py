@@ -112,11 +112,17 @@ def create_app(service: CQAService | None = None) -> FastAPI:
     def conversations(dataset: str | None = None, language: str | None = None,
                       channel: str | None = None) -> list[dict[str, Any]]:
         latest = service.storage.latest_evaluations()
+        # Итог после решений проверяющего — для оценок, где оценку меняли по апелляции.
+        changed = {a["evaluation_id"] for a in service.storage.list_appeals(status="changed")}
         rows = []
         for conv in service.storage.list_conversations(dataset):
             if (language and conv.language != language) or (channel and conv.channel != channel):
                 continue
-            rows.append(conversation_summary(conv, latest.get(conv.conversation_id)))
+            summary = conversation_summary(conv, latest.get(conv.conversation_id))
+            ev = summary["evaluation"]
+            if ev and ev["id"] in changed:
+                ev["final_total"] = service.final_result(ev["id"])["final"]["total"]
+            rows.append(summary)
         return rows
 
     @app.get("/api/conversations/{conversation_id}")
@@ -187,12 +193,20 @@ def create_app(service: CQAService | None = None) -> FastAPI:
 
     @app.get("/api/appeals")
     def appeals(status: str | None = None) -> list[dict[str, Any]]:
+        """Очередь проверяющего: апелляция, спорный результат критерия и контекст оценки."""
         rows = service.storage.list_appeals(status=status)
         evaluations: dict[str, dict[str, Any]] = {}
         for a in rows:
-            ev = evaluations.setdefault(a["evaluation_id"], service.storage.get_evaluation(a["evaluation_id"]))
-            a["conversation_id"] = ev["conversation_id"]
-            a["original"] = next((r for r in ev["results"] if r["criterion_id"] == a["criterion_id"]), None)
+            if a["evaluation_id"] not in evaluations:
+                evaluations[a["evaluation_id"]] = service.storage.get_evaluation(a["evaluation_id"])
+            ev = evaluations[a["evaluation_id"]]
+            a.update(
+                conversation_id=ev["conversation_id"],
+                checklist_id=ev["checklist_id"],
+                checklist_version=ev["checklist_version"],
+                evaluation_total=ev["total"],
+                original=next((r for r in ev["results"] if r["criterion_id"] == a["criterion_id"]), None),
+            )
         return rows
 
     @app.post("/api/appeals/{appeal_id}/decision")

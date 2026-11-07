@@ -54,6 +54,7 @@ def main() -> None:
     ap.add_argument("--status", choices=["draft", "verified"], default="verified",
                     help="минимальный статус разметки")
     ap.add_argument("--errors", nargs="*", metavar="CRITERION", help="показать расхождения (без id — все)")
+    ap.add_argument("--strict", action="store_true", help="неоценённые диалоги считать ошибкой (финальный замер)")
     args = ap.parse_args()
 
     run_dir = args.run or latest_run()
@@ -68,13 +69,20 @@ def main() -> None:
         raise SystemExit("Нет размеченных диалогов под эти условия (см. --split и --status)")
 
     predictions = load_predictions(run_dir)
+    not_evaluated = sorted(cid for cid in selected if cid not in predictions)
+    if not args.strict:
+        # Незавершённый прогон: считаем точность по оценённым диалогам, остальные — отдельной строкой.
+        selected = {cid: item for cid, item in selected.items() if cid in predictions}
+        if not selected:
+            raise SystemExit("В прогоне нет ни одного диалога из выбранной части эталона")
     report = compare(checklist, {k: v["answers"] for k, v in selected.items()}, predictions,
                      {k: v["language"] for k, v in selected.items()})
 
     print(f"Прогон {run_dir.name} · эталон {args.gold.name} · {args.split} · статус ≥ {args.status}")
-    print(f"Диалогов: {report.conversations}, без оценки системы: {len(report.missing_predictions)}")
+    print(f"Диалогов в замере: {report.conversations}, ещё не оценено системой: {len(not_evaluated)}"
+          + (" (считаются ошибкой, --strict)" if args.strict and not_evaluated else ""))
     print(f"Точность ответов: {pct(report.answer_accuracy)}   "
-          f"MAE итога: {report.total_mae if report.total_mae is not None else '—'}   "
+          f"MAE итога: {f'{report.total_mae:.2f}' if report.total_mae is not None else '—'}   "
           f"итог в пределах 5 баллов: {pct(report.total_within_tolerance)}")
     print("\nКритерий   точность   MAE   ошибки (эталон→система)")
     for cid, s in report.criteria.items():

@@ -132,6 +132,20 @@ def test_replace_criterion_and_reevaluate_only_new(setup):
     assert ev["total"] == 75.5    # 90.5 − 15 (C5 «Да») + 0 (C9 = 0)
 
 
+def test_weight_change_rescores_without_model(setup):
+    client, provider, checklist = setup
+    evaluate(client)
+    calls_before = provider.calls
+    new = copy.deepcopy(checklist)
+    next(c for c in new["criteria"] if c["id"] == "C1")["weight"] = 20
+    client.put("/api/checklists/chat-default", json=new)
+
+    ev = evaluate(client, criteria_ids=[])
+    assert provider.calls == calls_before
+    assert ev["checklist_version"] == 2 and ev["reevaluated"] == []
+    assert ev["total"] == 91.36    # 100.5 из 110 → к 100
+
+
 def test_checklist_validation_rejects_bad_config(setup, checklist):
     client, _, _ = setup
     bad = copy.deepcopy(checklist)

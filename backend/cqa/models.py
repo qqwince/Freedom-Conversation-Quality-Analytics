@@ -55,13 +55,15 @@ class CriterionVerdict(BaseModel):
     checks: list[CheckAnswer]
     answer: str = Field(description="yes | no | na, для шкалы — значение ступени, например 15")
     flag_subtypes: list[str] = Field(default_factory=list, description="Только для флага: найденные подтипы")
-    evidence: list[Evidence] = Field(default_factory=list)
+    evidence: list[Evidence] = Field(
+        description="Обязательно: реплики, на которых основан ответ (для пропущенного действия — где оно ожидалось)"
+    )
     expected_from_msg: int | None = Field(
         default=None, description="Для пропущенного действия: начало участка, где оно ожидалось"
     )
     expected_to_msg: int | None = Field(default=None, description="Конец этого участка")
     na_reason: str | None = Field(default=None, description="Для N/A: какое условие неприменимости выполнено")
-    explanation: str = Field(description="«<Критерий> — <Ответ>. <Почему>. Основание — <реплики>»")
+    explanation: str = Field(description="«<Название критерия словами> — <Ответ>. <Почему>. Основание — <реплики>»")
 
 
 class LLMEvaluation(BaseModel):

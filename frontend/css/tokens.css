@@ -1,0 +1,51 @@
+/* Дизайн-токены CQA. Все цвета, размеры и шрифты — только отсюда.
+   Для встраивания в Dynamics 365 достаточно переопределить переменные на .cqa-app. */
+
+.cqa-app {
+  /* Поверхности */
+  --cqa-bg: #0b0d0c;
+  --cqa-surface-1: #131715;
+  --cqa-surface-2: #1a1f1c;
+  --cqa-surface-3: #212824;
+  --cqa-line: #242c27;
+  --cqa-line-strong: #34403a;
+
+  /* Текст */
+  --cqa-text: #eef2ef;
+  --cqa-text-2: #a3ada7;
+  --cqa-text-3: #727d76;
+
+  /* Бренд и смысловые цвета */
+  --cqa-green: #17744a;
+  --cqa-green-hover: #1d8a59;
+  --cqa-green-bg: #0e3826;
+  --cqa-green-fg: #43c987;
+  --cqa-red-bg: #3b1b18;
+  --cqa-red-fg: #e8746a;
+  --cqa-amber-bg: #3b2e12;
+  --cqa-amber-fg: #e0ac4b;
+  --cqa-range-bg: #231d10;
+  --cqa-range-line: #5c4920;
+
+  /* Типографика */
+  --cqa-font: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --cqa-font-mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+  --cqa-fs-xs: 12px;     /* подписи, метаданные */
+  --cqa-fs-sm: 13px;     /* вторичный текст */
+  --cqa-fs-md: 15px;     /* основной текст */
+  --cqa-fs-lg: 17px;     /* значения в плитках */
+  --cqa-fs-xl: 20px;     /* заголовок экрана */
+  --cqa-fs-hero: 52px;   /* итоговый балл */
+  --cqa-fw-regular: 400;
+  --cqa-fw-medium: 500;
+  --cqa-fw-bold: 600;
+
+  /* Геометрия */
+  --cqa-radius-sm: 8px;
+  --cqa-radius: 10px;
+  --cqa-radius-lg: 14px;
+  --cqa-gap: 12px;
+  --cqa-pad-x: 24px;
+  --cqa-content-width: 1080px;
+  --cqa-transition: 160ms ease;
+}

@@ -14,7 +14,7 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from typing import Any, Literal
 
-from cqa.models import Conversation, CriterionVerdict, LLMEvaluation
+from cqa.models import Conversation, CriterionVerdict, Evidence, LLMEvaluation
 from cqa.scoring import NA, NO, YES, Answer, ScoringError, normalize_answer
 from cqa.transcript import ConversationFacts, EventType
 
@@ -90,6 +90,7 @@ def validate(llm_eval: LLMEvaluation, checklist: Mapping[str, Any], conv: Conver
         except ScoringError as exc:
             issues.append(Issue(cid, "error", str(exc).removeprefix(f"{cid}: ")))
             continue
+        _fill_evidence_from_checks(verdict, speakers)
         criterion_issues = _check_verdict(criterion, verdict, answer, speakers)
         for rule_name in criterion.get("validators", []):
             rule = RULES.get(rule_name)
@@ -100,6 +101,19 @@ def validate(llm_eval: LLMEvaluation, checklist: Mapping[str, Any], conv: Conver
             answers[cid] = answer
 
     return ValidationResult(verdicts=verdicts, answers=answers, issues=issues)
+
+
+def _fill_evidence_from_checks(v: CriterionVerdict, speakers: Mapping[int, str]) -> None:
+    """Некоторые модели указывают реплики только в подпунктах. Тогда доказательства берутся оттуда:
+    без них в интерфейсе не будет перехода к нужному сообщению."""
+    if v.evidence:
+        return
+    seen: dict[int, str] = {}
+    for check in v.checks:
+        for idx in check.msg:
+            if idx in speakers and idx not in seen:
+                seen[idx] = check.q
+    v.evidence = [Evidence(msg_idx=idx, proves=q) for idx, q in sorted(seen.items())]
 
 
 def _check_verdict(criterion: Mapping[str, Any], v: CriterionVerdict, answer: Answer,
