@@ -76,16 +76,23 @@ def export_record(conversation_id: str, evaluation: Mapping[str, Any] | None,
     if evaluation.get("scoring_error") and not final:
         return _error(conversation_id, f"Итог не рассчитан: {evaluation['scoring_error']}")
 
+    reasons = dict(final.get("reasons", {})) if final else {}
     out_criteria = []
     critical_flag = False
     for c in criteria:
         code = c.get("export_id") or c["id"]
         value = to_value(answers[c["id"]])
         result = by_id.get(c["id"], {})
+        rationale = (result.get("explanation") or "").strip()
+        # ответ изменён проверяющим: объяснение модели относится к прежнему ответу — дописываем решение
+        reason = reasons.get(c["id"]) or (result.get("appeal_carried") or {}).get("reason")
+        if c["id"] in reasons or result.get("appeal_carried"):
+            rationale = f"{rationale} Решение проверяющего по апелляции: {_label(answers[c['id']])}." \
+                        + (f" {reason.strip()}" if reason and reason.strip() else "")
         out_criteria.append({
             "criterion_id": code,
             "value": value,
-            "rationale": (result.get("explanation") or "").strip(),
+            "rationale": rationale.strip(),
             "evidence_turns": evidence_turns(result),
         })
         if c["type"] == "flag" or c.get("is_critical_flag"):
@@ -184,6 +191,10 @@ def validate_results(doc: Mapping[str, Any], expected_ids: Sequence[str] | None 
 def _is_allowed(value: Any, allowed: tuple[Any, ...]) -> bool:
     """Сравнение с учётом типа: в Python True == 1, а для формата это разные значения."""
     return any(value is None if a is None else (type(value) is type(a) and value == a) for a in allowed)
+
+
+def _label(answer: Any) -> str:
+    return {"yes": "Да", "no": "Нет", "na": "N/A"}.get(answer, str(answer))
 
 
 def _error(conversation_id: str, reason: str) -> dict[str, Any]:

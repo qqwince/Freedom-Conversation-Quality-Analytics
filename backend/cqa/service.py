@@ -232,14 +232,25 @@ class CQAService:
         return self.storage.save_evaluation(self._merge(base, partial, checklist))
 
     def _merge(self, base: dict[str, Any], partial: dict[str, Any], checklist: Mapping[str, Any]) -> dict[str, Any]:
+        """Новая оценка из базовой: переоценённые критерии — свежие, остальные переносятся.
+        Перенесённый критерий берёт ответ из решения проверяющего, если по базовой оценке его меняли
+        по апелляции, — иначе замена другого критерия молча откатила бы решение человека."""
         fresh = {r["criterion_id"]: r for r in partial["results"]}
         previous = {r["criterion_id"]: r for r in base["results"]}
+        decided = {a["criterion_id"]: a for a in self.storage.list_appeals(evaluation_id=base["id"])
+                   if a["status"] == "changed"}
         results = []
         for c in sorted(checklist["criteria"], key=lambda c: c.get("order", 0)):
             if c["id"] in fresh:
                 results.append(fresh[c["id"]])
             elif c["id"] in previous:
-                results.append({**previous[c["id"]], "carried_from": base["id"]})
+                carried = {**previous[c["id"]], "carried_from": base["id"]}
+                if c["id"] in decided:
+                    appeal = decided[c["id"]]
+                    carried["appeal_carried"] = {"appeal_id": appeal["id"], "model_answer": carried["answer"],
+                                                 "reason": appeal["decision"].get("reason")}
+                    carried["answer"] = appeal["decision"]["new_answer"]
+                results.append(carried)
             else:
                 raise ServiceError(f"критерий {c['id']} новый — его нужно включить в переоценку")
         merged = {**partial, "results": results, "criteria_ids": [r["criterion_id"] for r in results],
@@ -363,6 +374,8 @@ class CQAService:
                 "answers": {r["criterion_id"]: overrides.get(r["criterion_id"], r["answer"])
                             for r in evaluation["results"]},
                 "changed": sorted(overrides),
+                "reasons": {a["criterion_id"]: a["decision"].get("reason")
+                            for a in appeals if a["status"] == "changed"},
                 "criteria": final.get("criteria", []),
             },
         }

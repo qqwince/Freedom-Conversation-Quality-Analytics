@@ -4,7 +4,7 @@
 import { api } from "../api.js";
 import { $, $$, esc, formatDate, formatOffset, freshRoot, num, on, plural, total, turn } from "../dom.js";
 import { icon } from "../icons.js";
-import { CHANNEL, SPEAKER, evidenceOf, pill, reviewNotes, sectionTone, totalTone } from "../labels.js";
+import { CHANNEL, SPEAKER, answerText, evidenceOf, pill, reviewNotes, sectionTone, totalTone } from "../labels.js";
 import { countUp, replay, staggerStyle } from "../motion.js";
 import { can } from "../session.js";
 import { toast } from "../ui.js";
@@ -238,7 +238,9 @@ function criterionDetails(criterion, r, appeals, ctx) {
     ${reasoning}
     ${decided.map((a) => appealDecision(criterion, a)).join("")}
     <div class="row" style="flex-wrap:wrap">
-      <span class="grow xs faint">${esc(weightNote)}${r.carried_from ? " · ответ из предыдущей оценки" : ""}</span>
+      <span class="grow xs faint">${esc(weightNote)}${r.appeal_carried
+        ? ` · решение проверяющего по апелляции (модель: ${esc(answerText(criterion, r.appeal_carried.model_answer))})`
+        : r.carried_from ? " · ответ из предыдущей оценки" : ""}</span>
       ${openAppeal
         ? `<span class="small cqa-part">Апелляция на рассмотрении</span>`
         : can("appeal") ? `<button class="cqa-btn cqa-btn--sm" data-action="appeal" data-cid="${esc(criterion.id)}">${icon("flag")} Оспорить</button>` : ""}

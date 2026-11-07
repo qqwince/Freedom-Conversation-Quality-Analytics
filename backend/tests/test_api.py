@@ -233,6 +233,30 @@ def test_replace_criterion_and_reevaluate_only_new(setup):
     assert ev["total"] == 75.5    # 90.5 − 15 (C5 «Да») + 0 (C9 = 0)
 
 
+def test_reviewer_decision_survives_partial_reevaluation(setup):
+    """Решение проверяющего по C6 не теряется, когда после замены критерия переоценивают только новый."""
+    client, _, checklist = setup
+    base = evaluate(client)
+    appeal = client.post(f"/api/evaluations/{base['id']}/appeals",
+                         json={"criterion_id": "C6", "comment": "Предупредил об ожидании"}).json()
+    client.post(f"/api/appeals/{appeal['id']}/decision",
+                json={"action": "change", "new_answer": 10, "reason": "Предупреждение в [7]"})
+
+    new = copy.deepcopy(checklist)
+    next(c for c in new["criteria"] if c["id"] == "C7")["description"] = "Попрощался и предложил помощь"
+    client.put("/api/checklists/chat-default", json=new)
+    ev = evaluate(client, criteria_ids=["C7"])
+
+    c6 = next(r for r in ev["results"] if r["criterion_id"] == "C6")
+    assert c6["answer"] == 10 and c6["appeal_carried"]["appeal_id"] == appeal["id"]
+    assert c6["appeal_carried"]["model_answer"] == 7
+    assert ev["total"] == 95.0                               # как после решения, а не 90.5 модели
+    exported = client.get("/api/export?dataset=MANUAL").json()["results"][0]
+    dialogue = next(c for c in exported["criteria"] if c["criterion_id"] == "dialogue")
+    assert dialogue["value"] == 10
+    assert dialogue["rationale"].endswith("Решение проверяющего по апелляции: 10. Предупреждение в [7]")
+
+
 def test_weight_change_rescores_without_model(setup):
     client, provider, checklist = setup
     evaluate(client)
