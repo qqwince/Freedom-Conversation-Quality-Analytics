@@ -19,14 +19,14 @@ const SUBTYPE = {
 export async function renderCard(container, conversationId) {
   const conv = await api.conversation(conversationId);
   const el = freshRoot(container);
-  const ctx = { el, conv, mode: "original", openCriterion: null, evaluationId: conv.evaluations[0]?.id ?? null };
+  const ctx = { el, conv, mode: null, openCriterion: null, evaluationId: conv.evaluations[0]?.id ?? null };
   await draw(ctx);
 
   const route = location.hash;
   const reloadIfStillHere = () => { if (location.hash === route) renderCard(container, conversationId); };
   on(el, "click", "[data-action=back]", () => { location.hash = "#/conversations"; });
   on(el, "click", "[data-action=evaluate]", () => startEvaluation([conv.conversation_id], reloadIfStillHere));
-  on(el, "change", "[data-role=history]", (e, sel) => { ctx.evaluationId = sel.value; ctx.mode = "original"; draw(ctx); });
+  on(el, "change", "[data-role=history]", (e, sel) => { ctx.evaluationId = sel.value; ctx.mode = null; draw(ctx); });
   on(el, "click", "[data-mode]", (e, btn) => { ctx.mode = btn.dataset.mode; draw(ctx); });
   on(el, "click", "[data-crit] > .cqa-list__row", (e, row) => toggleCriterion(ctx, row.parentElement.dataset.crit));
   on(el, "click", "[data-msg]", (e, chip) => { e.stopPropagation(); focusMessages(el, conv, [Number(chip.dataset.msg)], "is-hl"); });
@@ -63,7 +63,9 @@ async function draw(ctx) {
   const latestVersion = checklists.find((c) => c.id === evaluation.checklist_id)?.latest_version;
   Object.assign(ctx, { evaluation, checklist, final });
   const hasDecisions = final.appeals.some((a) => a.status !== "open");
+  // Есть решения по апелляциям — сначала показываем итог после них; «Исходная» — по кнопке.
   if (!hasDecisions) ctx.mode = "original";
+  else if (ctx.mode == null) ctx.mode = "final";
   const view = ctx.mode === "final" ? finalView(evaluation, final) : originalView(evaluation);
   const wasOpen = $("[data-section=dialog]", el)?.classList.contains("is-open");
   // Критерии появляются по очереди только при первом показе оценки, не при каждом переключении.

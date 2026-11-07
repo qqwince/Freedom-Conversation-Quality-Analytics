@@ -93,3 +93,16 @@ def test_validate_catches_format_errors(checklist):
     assert any("dialogue = 5" in p for p in problems)
     assert any("evidence_turns" in p for p in problems)
     assert any("critical_flag" in p for p in problems)
+
+
+def test_validate_requires_exactly_the_eight_codes(checklist):
+    """Заменённый критерий с новым кодом — не формат 1.0: файл с ним не должен уйти в prod молча."""
+    doc = build_results(["a"], {"a": evaluation()}.get, lambda ev: checklist, lambda ev: None,
+                        team_name="T", model_mode="external_api")
+    replaced = copy.deepcopy(doc)
+    replaced["results"][0]["criteria"][4]["criterion_id"] = "C9"          # empathy заменили новым критерием
+    problems = validate_results(replaced, ["a"])
+    assert any("нет: empathy" in p and "лишние: C9" in p for p in problems)
+    short = copy.deepcopy(doc)
+    del short["results"][0]["criteria"][2]
+    assert any("нет: identification" in p for p in validate_results(short, ["a"]))

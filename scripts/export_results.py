@@ -26,15 +26,19 @@ PROD_RECORDS = 10
 
 def write_results(dataset: str, prod: bool, team: str, mode: str, with_appeals: bool = True
                   ) -> tuple[Path, dict[str, Any], list[str]]:
-    """Собирает results.json по набору, проверяет формат и записывает файл. Возвращает путь, документ и проблемы."""
+    """Собирает results.json по набору и проверяет формат. Возвращает путь, документ и проблемы.
+
+    Файл с проблемами пишется рядом как results.invalid.json: уже готовый results.json не затирается
+    неудачной выгрузкой (например, после замены критерия на контроле)."""
     settings = get_settings()
     service = CQAService(Storage(settings.data_dir / "cqa.sqlite3"), provider_factory=lambda m=None: None,
                          api_url=None)
     doc, problems = export_dataset(service, dataset, team, mode, with_appeals)
     if prod and len(doc["results"]) != PROD_RECORDS:
         problems.append(f"в prod должно быть ровно {PROD_RECORDS} записей, а их {len(doc['results'])}")
-    out = PROJECT_ROOT / "results" / ("prod" if prod else "dev") / "results.json"
-    out.parent.mkdir(parents=True, exist_ok=True)
+    folder = PROJECT_ROOT / "results" / ("prod" if prod else "dev")
+    out = folder / ("results.invalid.json" if problems else "results.json")
+    folder.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(doc, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     return out, doc, problems
 
@@ -48,7 +52,7 @@ def report(out: Path, doc: dict[str, Any], problems: list[str]) -> bool:
     for r in errors:
         print(f"  error {r['conversation_id']}: {r['error']}")
     if problems:
-        print("Проблемы формата — исправьте до push:")
+        print("Проблемы формата — results.json не перезаписан, исправьте до push:")
         for p in problems:
             print("  -", p)
     return not problems

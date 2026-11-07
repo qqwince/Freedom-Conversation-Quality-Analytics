@@ -33,12 +33,22 @@ def build_url(url: str, group_id: str | None) -> str:
 
 
 def fetch_raw(url: str, group_id: str | None = None, timeout: float = 60) -> dict[str, Any]:
+    """Ответ API организаторов. В тексте ошибки нет адреса: в нём подпись доступа (sig), а текст
+    уходит в интерфейс и журналы."""
+    label = f"group_id={group_id}" if group_id else "набор из ссылки"
     try:
         response = httpx.get(build_url(url, group_id), timeout=timeout, headers={"Accept": "application/json"})
-        response.raise_for_status()
+    except httpx.TimeoutException as exc:
+        raise DatasetError(f"API организаторов не ответило за {timeout:.0f} с ({label})") from exc
+    except httpx.HTTPError as exc:
+        raise DatasetError(f"API организаторов недоступно ({label}): {type(exc).__name__}") from exc
+    if response.status_code >= 400:
+        hint = " — проверьте group_id" if response.status_code in (400, 404) else ""
+        raise DatasetError(f"API организаторов ответило {response.status_code} для {label}{hint}")
+    try:
         return response.json()
-    except (httpx.HTTPError, json.JSONDecodeError) as exc:
-        raise DatasetError(f"не удалось получить набор: {exc}") from exc
+    except json.JSONDecodeError as exc:
+        raise DatasetError(f"API организаторов вернуло не JSON ({label})") from exc
 
 
 def parse_offset(timestamp: str, first: datetime | None) -> tuple[float | None, datetime | None]:

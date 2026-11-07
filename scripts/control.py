@@ -22,6 +22,7 @@ from typing import Any
 import httpx
 
 from cqa.config import PROJECT_ROOT, get_settings
+from cqa.export import ALLOWED_VALUES
 from export_results import report, write_results
 
 ADMIN = {"X-CQA-User": "admin"}
@@ -107,6 +108,11 @@ def main() -> None:
     if unknown:
         raise SystemExit(f"В чек-листе v{checklist['version']} нет критериев {', '.join(unknown)} — "
                          "сначала сохраните новую версию в интерфейсе.")
+    codes = {c.get("export_id") or c["id"] for c in checklist["criteria"]}
+    if codes != set(ALLOWED_VALUES):
+        print(f"⚠ Чек-лист v{checklist['version']} отличается от исходных 8 критериев организаторов "
+              f"(коды: {', '.join(sorted(codes))}). Оценка пройдёт и будет видна в интерфейсе, но results.json "
+              "формата 1.0 из неё не собрать — prod сдаётся по исходному чек-листу, до замены критерия.")
 
     if not args.skip_import:
         with Step(f"Загрузка набора {args.group_id} из API организаторов"):
@@ -114,7 +120,9 @@ def main() -> None:
             print(f"  набор {imported['dataset']}: {imported['imported']} диалогов, новых {len(imported['new_ids'])}")
             for w in imported.get("warnings", []):
                 print("  предупреждение:", w)
-    dataset = args.group_id
+            dataset = imported["dataset"]          # как набор назван в API (регистр group_id может отличаться)
+    else:
+        dataset = args.group_id
     ids = [c["conversation_id"] for c in server.call("GET", "/api/conversations", params={"dataset": dataset})]
     if not ids:
         raise SystemExit(f"В базе нет диалогов набора {dataset}")
@@ -132,7 +140,8 @@ def main() -> None:
         out, doc, problems = write_results(dataset, not args.dev, args.team, args.mode)
         ok = report(out, doc, problems)
     if not ok:
-        raise SystemExit("Файл записан, но формат с ошибками — push не выполнен.")
+        raise SystemExit(f"Формат с ошибками: проблемный файл — {out.relative_to(PROJECT_ROOT).as_posix()}, "
+                         "сданный results.json не тронут, push не выполнен.")
 
     rel = out.relative_to(PROJECT_ROOT).as_posix()
     if args.push:

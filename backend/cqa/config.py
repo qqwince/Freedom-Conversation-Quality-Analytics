@@ -64,6 +64,6 @@ def get_settings() -> Settings:
         workers=int(os.environ.get("CQA_WORKERS", "4")),
         price_input_per_m=_float_env("CQA_PRICE_INPUT_PER_M"),
         price_output_per_m=_float_env("CQA_PRICE_OUTPUT_PER_M"),
-        data_dir=PROJECT_ROOT / "data",
+        data_dir=Path(os.environ.get("CQA_DATA_DIR") or PROJECT_ROOT / "data"),   # отдельная база для демо и тестов
         checklist_path=PROJECT_ROOT / "config" / "checklist.default.json",
     )

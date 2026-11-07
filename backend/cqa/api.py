@@ -28,6 +28,7 @@ from cqa.coach import ask as ask_coach
 from cqa.coach import build_context as build_coach_context
 from cqa.config import PROJECT_ROOT, get_settings
 from cqa.criterion_draft import draft_criterion
+from cqa.dataset import DatasetError
 from cqa.feedback import build_feedback
 from cqa.llm import LLMError, create_provider
 from cqa.models import Conversation
@@ -152,6 +153,10 @@ def create_app(service: CQAService | None = None, start_sync: bool | None = None
     @app.exception_handler(NotFound)
     async def _not_found(_: Request, exc: NotFound) -> JSONResponse:
         return JSONResponse(status_code=404, content={"detail": str(exc)})
+
+    @app.exception_handler(DatasetError)
+    async def _dataset_error(_: Request, exc: DatasetError) -> JSONResponse:
+        return JSONResponse(status_code=502, content={"detail": str(exc)})
 
     @app.exception_handler(LLMError)
     async def _llm_error(_: Request, exc: LLMError) -> JSONResponse:

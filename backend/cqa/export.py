@@ -170,6 +170,13 @@ def validate_results(doc: Mapping[str, Any], expected_ids: Sequence[str] | None 
         codes = [c.get("criterion_id") for c in r.get("criteria") or []]
         if len(codes) != len(set(codes)):
             problems.append(f"{cid}: критерий указан дважды")
+        # формат 1.0: ровно восемь критериев организаторов — чужой код значит, что чек-лист изменён
+        missing, extra = sorted(set(ALLOWED_VALUES) - set(codes)), sorted(set(codes) - set(ALLOWED_VALUES))
+        if missing or extra:
+            problems.append(f"{cid}: коды критериев не совпадают с форматом 1.0"
+                            + (f"; нет: {', '.join(missing)}" if missing else "")
+                            + (f"; лишние: {', '.join(map(str, extra))}" if extra else "")
+                            + " — выгружайте по исходному чек-листу из 8 критериев")
         for c in r.get("criteria") or []:
             code, value = c.get("criterion_id"), c.get("value")
             allowed = ALLOWED_VALUES.get(code)

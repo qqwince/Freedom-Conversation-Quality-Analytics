@@ -10,3 +10,5 @@ eval/runs/
 .pytest_cache/
 .ruff_cache/
 eval/reports/
+demo-data/
+results/*/results.invalid.json
