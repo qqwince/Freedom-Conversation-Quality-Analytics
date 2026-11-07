@@ -30,6 +30,8 @@ def _float_env(name: str) -> float | None:
 @dataclass(frozen=True)
 class Settings:
     gemini_api_key: str | None
+    deepseek_api_key: str | None
+    deepseek_base_url: str
     llm_model: str
     llm_fallback_models: tuple[str, ...]   # при перегрузке основной модели, по порядку
     llm_temperature: float
@@ -49,6 +51,8 @@ def get_settings() -> Settings:
     load_dotenv()
     return Settings(
         gemini_api_key=os.environ.get("GEMINI_API_KEY"),
+        deepseek_api_key=os.environ.get("DEEPSEEK_API_KEY"),
+        deepseek_base_url=os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com"),
         llm_model=os.environ.get("CQA_LLM_MODEL", "gemini-3.5-flash"),
         llm_fallback_models=tuple(
             m.strip() for m in os.environ.get("CQA_LLM_FALLBACK_MODELS", "gemini-3.6-flash").split(",") if m.strip()

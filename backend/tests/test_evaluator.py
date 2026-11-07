@@ -45,8 +45,8 @@ def test_happy_path(checklist, conversation):
     assert ev["total"] == 90.5          # 10+15+20+15+15+10.5+5
     assert ev["critical"] == {"flag": False, "subtypes": []}
     assert not ev["needs_review"]
-    assert ev["usage"] == {"calls": 1, "input_tokens": 1000, "output_tokens": 200,
-                           "latency_sec": 0.1, "cost_usd": None}
+    usage = {k: v for k, v in ev["usage"].items() if k != "cost_usd"}   # цена зависит от настроек
+    assert usage == {"calls": 1, "input_tokens": 1000, "output_tokens": 200, "latency_sec": 0.1}
     assert ev["log"]["calls"][0]["response"]   # сырой ответ модели сохранён
     assert len(ev["transcript_sha256"]) == 64
 
