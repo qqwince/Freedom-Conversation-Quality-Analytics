@@ -122,7 +122,19 @@ def print_stats(ds: dict) -> None:
     print(f"  с audio_url: {with_audio}")
 
 
+def load_env() -> None:
+    """Подхватывает CQA_API_URL из .env в корне проекта (файл не коммитится)."""
+    env = ROOT / ".env"
+    if not env.exists():
+        return
+    for line in env.read_text(encoding="utf-8").splitlines():
+        if "=" in line and not line.lstrip().startswith("#"):
+            key, value = line.split("=", 1)
+            os.environ.setdefault(key.strip(), value.strip())
+
+
 def main() -> None:
+    load_env()
     for stream in (sys.stdout, sys.stderr):  # кириллица в консоли Windows
         try:
             stream.reconfigure(encoding="utf-8")

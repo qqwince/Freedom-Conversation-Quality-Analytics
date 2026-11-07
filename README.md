@@ -11,6 +11,7 @@
 ```
 config/checklist.default.json   исходный чек-лист (8 критериев, веса, шкалы, правила N/A, подпункты проверки)
 schemas/                        JSON Schema: чек-лист и ответ модели
+docs/PLAN.md                    план работ под критерии отбора
 docs/contracts.md               модели данных: Conversation, Evaluation, Appeal, Decision, формула итога
 docs/interpretations.md         принятые трактовки спорных мест и вопросы организаторам
 scripts/fetch_dataset.py        загрузка и нормализация набора из API организаторов
@@ -21,9 +22,13 @@ data/                           загруженные наборы (не ком
 
 Нужен Python 3.10+ (только стандартная библиотека).
 
-1. Загрузить DEV-набор. Ссылку берём с кнопки «Открыть GET для DEV» в задании:
+1. Создать файл `.env` в корне проекта (не коммитится) со ссылкой API организаторов:
+   ```
+   CQA_API_URL=<ссылка GET из задания, с group_id=DEV>
+   ```
+   и загрузить DEV-набор:
    ```bash
-   python scripts/fetch_dataset.py --url "<ссылка GET для DEV>"
+   python scripts/fetch_dataset.py
    ```
 2. Контрольный набор — тот же адрес с другим `group_id`:
    ```bash
