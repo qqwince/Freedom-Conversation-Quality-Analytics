@@ -24,6 +24,7 @@ export async function renderConversations(container) {
   el.innerHTML = `
     <div class="cqa-page-head">
       <div class="grow"><h1>Диалоги</h1></div>
+      <button class="cqa-btn cqa-btn--ghost" data-action="export" title="Файл results.json в формате организаторов">${icon("download")} results.json</button>
       <button class="cqa-btn" data-action="upload">${icon("upload")} Свой транскрипт</button>
       <button class="cqa-btn" data-action="import">${icon("download")} Загрузить набор</button>
     </div>
@@ -60,6 +61,7 @@ export async function renderConversations(container) {
     if (await startEvaluation([...state.selected], reload)) reload();
   });
   on(el, "click", "[data-action=import]", () => importDialog(reload));
+  on(el, "click", "[data-action=export]", () => exportDialog(datasets));
   on(el, "click", "[data-action=upload]", () => uploadDialog(reload));
 }
 
@@ -185,6 +187,25 @@ export async function startEvaluation(conversationIds, onFinish, { criteriaIds }
     trackJob(job, { onFinish });
   }
   return job;
+}
+
+async function exportDialog(datasets) {
+  await modal({
+    title: "Выгрузить results.json",
+    submitLabel: "Скачать",
+    body: `<label class="cqa-field"><span>Набор</span>
+      <select class="cqa-select" name="dataset">
+        ${datasets.map((d) => `<option value="${esc(d.dataset)}" ${d.dataset === state.dataset ? "selected" : ""}>${esc(d.dataset)} · ${d.n} ${plural(d.n, "диалог", "диалога", "диалогов")}</option>`).join("")}
+      </select></label>
+      <p class="small muted">Формат JSON 1.0 организаторов: последняя оценка каждого диалога с учётом решений по апелляциям. Неоценённые диалоги попадут в файл со статусом error.</p>`,
+    async onSubmit(form) {
+      const link = document.createElement("a");
+      link.href = api.exportUrl(form.dataset.value);
+      link.download = `results-${form.dataset.value}.json`;
+      link.click();
+      return true;
+    },
+  });
 }
 
 async function importDialog(onDone) {

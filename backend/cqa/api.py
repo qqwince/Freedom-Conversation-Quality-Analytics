@@ -15,14 +15,14 @@ import time
 from typing import Any
 
 import httpx
-from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from cqa.config import PROJECT_ROOT, get_settings
 from cqa.llm import LLMError, create_provider
-from cqa.service import CQAService, ServiceError, conversation_summary
+from cqa.service import CQAService, ServiceError, conversation_summary, export_dataset
 from cqa.storage import NotFound, Storage
 
 log = logging.getLogger(__name__)
@@ -77,6 +77,14 @@ def create_app(service: CQAService | None = None) -> FastAPI:
     app = FastAPI(title="CQA — оценка качества диалогов", version="0.1.0")
     app.state.service = service
     audio_cache: dict[str, tuple[float, str]] = {}
+
+    @app.middleware("http")
+    async def _no_stale_frontend(request: Request, call_next: Any) -> Any:
+        """Файлы интерфейса браузер перепроверяет при каждой загрузке — после обновления нет старых JS-модулей."""
+        response = await call_next(request)
+        if not request.url.path.startswith(("/api/", "/_v/")):   # /_v/ — адреса с меткой запуска, кэш можно
+            response.headers["Cache-Control"] = "no-cache"
+        return response
 
     @app.exception_handler(ServiceError)
     async def _bad_request(_: Request, exc: ServiceError) -> JSONResponse:
@@ -209,13 +217,58 @@ def create_app(service: CQAService | None = None) -> FastAPI:
             )
         return rows
 
+    @app.post("/api/appeals/{appeal_id}/ai-opinion")
+    def ai_opinion(appeal_id: str) -> dict[str, Any]:
+        """Второе мнение модели по спорному критерию — подсказка проверяющему (≈ 20–40 с)."""
+        return service.ai_second_opinion(appeal_id)
+
     @app.post("/api/appeals/{appeal_id}/decision")
     def decide(appeal_id: str, body: DecisionRequest) -> dict[str, Any]:
         return service.decide_appeal(appeal_id, body.action, body.reason, body.new_answer)
 
+    # Выгрузка в формате организаторов
+
+    @app.get("/api/export")
+    def export(dataset: str, with_appeals: bool = True) -> JSONResponse:
+        """results.json (формат 1.0) по набору; проблемы формата — в заголовке X-CQA-Problems."""
+        team = os.environ.get("CQA_TEAM_NAME") or "CQA"
+        mode = os.environ.get("CQA_MODEL_MODE", "external_api")
+        doc, problems = export_dataset(service, dataset, team, mode, with_appeals)
+        filename = f"results-{dataset}.json"
+        return JSONResponse(doc, headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "X-CQA-Problems": str(len(problems)),
+        })
+
     if FRONTEND_DIR.exists():
-        app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
+        _mount_frontend(app)
     return app
+
+
+def _mount_frontend(app: FastAPI) -> None:
+    """Интерфейс с адресами вида /_v/<версия>/js/…, где версия — время последнего изменения файлов
+    интерфейса. После любой правки браузер гарантированно берёт новые JS-модули и стили, а не старые из кэша."""
+    root = FRONTEND_DIR.resolve()
+
+    def version() -> str:
+        return str(max(int(p.stat().st_mtime) for p in root.rglob("*") if p.is_file()))
+
+    @app.get("/", include_in_schema=False)
+    def frontend_index() -> HTMLResponse:
+        index = (root / "index.html").read_text(encoding="utf-8")
+        build = version()
+        for asset in ('href="css/', 'src="js/'):
+            index = index.replace(asset, asset.replace('="', f'="_v/{build}/'))
+        return HTMLResponse(index, headers={"Cache-Control": "no-cache"})
+
+    @app.get("/_v/{_build}/{path:path}", include_in_schema=False)
+    def frontend_asset(_build: str, path: str) -> FileResponse:
+        file = (root / path).resolve()
+        if not file.is_file() or root not in file.parents:
+            raise HTTPException(status_code=404)
+        return FileResponse(file, headers={"Cache-Control": "public, max-age=31536000, immutable"})
+
+    app.mount("/", StaticFiles(directory=root, html=True), name="frontend")
 
 
 def _brief(evaluation: dict[str, Any]) -> dict[str, Any]:

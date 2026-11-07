@@ -46,7 +46,8 @@
 
 /* Страница */
 .cqa-main { max-width: var(--cqa-content-width); margin: 0 auto; padding: 24px var(--cqa-pad-x) 64px; }
-.cqa-page-head { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; }
+.cqa-page-head { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; flex-wrap: wrap; }
+.cqa-page-head > .grow { min-width: 200px; }
 
 /* Кнопки и поля */
 .cqa-btn { display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 16px;

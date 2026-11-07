@@ -9,7 +9,7 @@ def test_prompt_contains_all_criteria_without_weights(checklist, conversation):
     assert "Вес" not in prompt.user and "weight" not in prompt.user
     assert "Допустимые ответы: 20 | 15 | 10 | 5 | 0 | na" in prompt.user   # C4
     assert "Допустимые ответы: yes | no\n" in prompt.user                  # C1 без N/A
-    assert "[5] 02:38 ОПЕРАТОР:" in prompt.user
+    assert "[6] 02:38 ОПЕРАТОР:" in prompt.user
     assert "Оценивается только работа оператора" in prompt.system
 
 

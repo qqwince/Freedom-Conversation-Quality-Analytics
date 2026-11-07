@@ -1,7 +1,7 @@
 // Экран проверяющего: спорная оценка, комментарий, фрагмент диалога, решение с причиной.
 
 import { api } from "../api.js";
-import { $, esc, formatDate, freshRoot, num, on } from "../dom.js";
+import { $, esc, formatDate, freshRoot, num, on, turn } from "../dom.js";
 import { icon } from "../icons.js";
 import { SPEAKER, allowedAnswers, evidenceOf, pill } from "../labels.js";
 import { toast } from "../ui.js";
@@ -39,6 +39,29 @@ export async function renderAppeals(container) {
     e.preventDefault();
     if (await decide(form, e.submitter?.value ?? "confirm")) renderAppeals(container);
   });
+  on(el, "click", "[data-action=ai]", async (e, btn) => {
+    btn.disabled = true;
+    btn.innerHTML = `${icon("refresh")} Модель проверяет…`;
+    try {
+      await api.aiOpinion(btn.dataset.id);
+      renderAppeals(container);
+    } catch (err) {
+      toast(err.message, "error");
+      btn.disabled = false;
+      btn.innerHTML = `${icon("refresh")} Второе мнение ИИ`;
+    }
+  });
+  on(el, "click", "[data-action=use-ai]", (e, btn) => {
+    const item = enriched.find((x) => x.appeal.id === btn.dataset.id);
+    const op = item.appeal.ai_opinion;
+    const form = el.querySelector(`form[data-decide="${CSS.escape(btn.dataset.id)}"]`);
+    const select = form.new_answer;
+    const changes = op.answer !== item.appeal.original?.answer;
+    select.value = changes ? String(op.answer) : "";
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+    form.reason.value = `По второму мнению ИИ: ${op.explanation}`;
+    form.reason.focus();
+  });
 }
 
 function emptyState() {
@@ -71,9 +94,40 @@ function appealCard({ appeal, checklist, conversation }) {
           <p class="muted">${esc(result?.explanation ?? "—")}</p>
         </div>
         ${fragment(conversation, result)}
+        ${aiOpinionBlock(appeal, criterion)}
         ${appeal.status === "open" ? decisionForm(appeal, criterion) : decisionSummary(appeal, criterion)}
       </div>
     </article>`;
+}
+
+/** Второе мнение модели: подсказка проверяющему. Решение и причину всё равно вводит человек. */
+function aiOpinionBlock(appeal, criterion) {
+  const op = appeal.ai_opinion;
+  if (!op) {
+    return appeal.status === "open"
+      ? `<div><button class="cqa-btn cqa-btn--sm" data-action="ai" data-id="${esc(appeal.id)}">${icon("refresh")} Второе мнение ИИ</button>
+          <span class="xs faint" style="margin-left:8px">модель заново проверит критерий с учётом комментария · ≈ 30 с</span></div>`
+      : "";
+  }
+  const turns = (op.evidence ?? []).map((e) => turn(e.msg_idx));
+  const verdict = op.supports_appeal
+    ? `<span class="cqa-part">поддерживает апелляцию</span>`
+    : `<span class="cqa-good">оставляет исходную оценку</span>`;
+  return `
+    <div class="cqa-banner" style="flex-direction:column;gap:8px;border-color:var(--cqa-line-strong)">
+      <div class="row" style="gap:10px;flex-wrap:wrap">
+        <span class="faint">${icon("refresh")}</span>
+        <b style="font-weight:600">Второе мнение ИИ</b>
+        ${pill(criterion, op.answer, "cqa-pill--sm")}
+        <span class="small">${verdict}</span>
+        <span class="grow"></span>
+        <span class="xs faint">${esc(op.model)} · ${esc(formatDate(op.created_at))}</span>
+      </div>
+      <p class="muted small">${esc(op.explanation)}${turns.length ? ` <span class="faint">· реплики ${turns.join(", ")}</span>` : ""}</p>
+      ${appeal.status === "open" ? `<div class="row" style="gap:8px">
+        <button class="cqa-btn cqa-btn--sm" data-action="use-ai" data-id="${esc(appeal.id)}">Подставить в решение</button>
+        <span class="xs faint">Это подсказка: решение принимает проверяющий.</span></div>` : ""}
+    </div>`;
 }
 
 /** Фрагмент диалога: реплики-доказательства и проверенный участок с соседями. */
@@ -92,7 +146,7 @@ function fragment(conversation, result) {
     previous = m.idx;
     const cls = focus.has(m.idx) ? (range && m.idx >= range.from_msg_idx && m.idx <= (range.to_msg_idx ?? range.from_msg_idx) ? "is-range" : "is-hl") : "";
     return `${gap}<div class="cqa-msg cqa-msg--${esc(m.speaker)} ${cls}">
-      <div class="cqa-msg__meta"><span>${m.idx} · ${esc(SPEAKER[m.speaker] ?? m.speaker)}</span></div>${esc(m.text)}</div>`;
+      <div class="cqa-msg__meta"><span>${turn(m.idx)} · ${esc(SPEAKER[m.speaker] ?? m.speaker)}</span></div>${esc(m.text)}</div>`;
   }).join("");
   return `<div><div class="xs faint" style="margin-bottom:6px">Фрагмент диалога</div><div class="stack" style="gap:6px">${html}</div></div>`;
 }

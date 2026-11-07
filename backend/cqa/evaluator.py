@@ -77,10 +77,11 @@ class Evaluator:
         self.max_repairs = max_repairs
 
     def evaluate(self, conv: Conversation, checklist: Mapping[str, Any],
-                 criteria_ids: Sequence[str] | None = None) -> dict[str, Any]:
-        """Полная оценка диалога. criteria_ids — оценить только часть критериев (без итога)."""
+                 criteria_ids: Sequence[str] | None = None, extra_context: str | None = None) -> dict[str, Any]:
+        """Полная оценка диалога. criteria_ids — оценить только часть критериев (без итога).
+        extra_context — дополнительный раздел промпта (второе мнение по апелляции)."""
         facts = extract_facts(conv, _wait_threshold(checklist))
-        prompt = build_prompt(checklist, conv, facts, criteria_ids)
+        prompt = build_prompt(checklist, conv, facts, criteria_ids, extra_context)
         ids = list(criteria_ids) if criteria_ids is not None else [c["id"] for c in checklist["criteria"]]
 
         calls: list[CallRecord] = []

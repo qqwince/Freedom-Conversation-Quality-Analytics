@@ -102,7 +102,7 @@ def test_scale_without_majority_takes_median_step(checklist, conversation):
 
 
 def test_critical_flag_requires_operator_evidence(checklist, conversation):
-    flagged = verdict("C8", "yes", evidence=[0], flag_subtypes=["insult"])   # [0] — реплика клиента
+    flagged = verdict("C8", "yes", evidence=[1], flag_subtypes=["insult"])   # [1] — реплика клиента
     parsed = LLMEvaluation.model_validate_json(response(dict(GOOD, C8="yes"), C8=flagged))
     result = validate(parsed, checklist, conversation, extract_facts(conversation))
     assert any(i.criterion_id == "C8" and i.severity == "error" for i in result.issues)
@@ -119,10 +119,10 @@ def test_identity_rule_warns_without_system_event(checklist):
 def test_evidence_filled_from_checks_when_model_omits_it(checklist, conversation):
     no_evidence = verdict("C1", "yes")
     no_evidence["evidence"] = []
-    no_evidence["checks"] = [{"q": "Первая реплика оператора?", "a": "[5]", "msg": [5, 99]}]
+    no_evidence["checks"] = [{"q": "Первая реплика оператора?", "a": "[6]", "msg": [6, 99]}]   # модель: с 1
     parsed = LLMEvaluation.model_validate_json(response(GOOD, C1=no_evidence))
     result = validate(parsed, checklist, conversation, extract_facts(conversation))
-    assert [(e.msg_idx, e.proves) for e in result.verdicts["C1"].evidence] == [(5, "Первая реплика оператора?")]
+    assert [(e.msg_idx, e.proves) for e in result.verdicts["C1"].evidence] == [(5, "Первая реплика оператора?")]  # с 0
     assert not [i for i in result.issues if i.criterion_id == "C1"]
 
 

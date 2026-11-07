@@ -213,6 +213,10 @@
               "type": "string"
             },
             "description": "Короткие разобранные примеры (few-shot) для промпта."
+          },
+          "export_id": {
+            "type": "string",
+            "description": "Код критерия в results.json организаторов (contact, discovery, …)."
           }
         }
       }

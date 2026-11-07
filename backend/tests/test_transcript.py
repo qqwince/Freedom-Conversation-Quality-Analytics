@@ -47,12 +47,12 @@ def test_pauses_skip_first_reaction_and_measure_from_first_unanswered(conversati
 
 def test_format_transcript(conversation):
     lines = format_transcript(conversation).splitlines()
-    assert lines[0] == "[0] 00:00 КЛИЕНТ: В портфеле не вижу бумагу. Сделок не делал."
-    assert lines[5].startswith("[5] 02:38 ОПЕРАТОР: Здравствуйте, я Соня.")
+    assert lines[0] == "[1] 00:00 КЛИЕНТ: В портфеле не вижу бумагу. Сделок не делал."
+    assert lines[5].startswith("[6] 02:38 ОПЕРАТОР: Здравствуйте, я Соня.")
 
 
 def test_format_facts_mentions_key_events(conversation):
     text = format_facts(extract_facts(conversation))
-    assert "Первая реплика оператора: [5]" in text
-    assert "[9]: личность клиента подтверждена" in text
-    assert "Долгое ожидание: клиент [8] → оператор [11], 05:14" in text
+    assert "Первая реплика оператора: [6]" in text   # номера с 1
+    assert "[10]: личность клиента подтверждена" in text
+    assert "Долгое ожидание: клиент [9] → оператор [12], 05:14" in text

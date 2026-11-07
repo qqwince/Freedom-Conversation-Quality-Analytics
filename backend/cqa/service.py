@@ -14,8 +14,10 @@ from typing import Any
 
 from cqa.dataset import fetch_raw, normalize, normalize_record
 from cqa.evaluator import Evaluator
+from cqa.export import build_results, validate_results
 from cqa.llm import LLMError, LLMProvider
 from cqa.models import Conversation
+from cqa.prompt import appeal_context
 from cqa.scoring import ScoringError, normalize_answer, score
 from cqa.storage import NotFound, Storage, now
 from cqa.validation import RULES
@@ -309,6 +311,38 @@ class CQAService:
             raise ServiceError("новая оценка совпадает с исходной — выберите «Подтвердить»")
         return self.storage.decide_appeal(appeal_id, "changed", {"new_answer": answer, "reason": reason.strip()})
 
+    def ai_second_opinion(self, appeal_id: str, model: str | None = None) -> dict[str, Any]:
+        """Второе мнение модели по апелляции — подсказка проверяющему, а не решение.
+
+        Модель заново оценивает только спорный критерий, видя исходную оценку и довод апелляции,
+        и должна сказать, подтверждается ли довод транскриптом. Решение и причину вводит человек.
+        """
+        appeal = self.storage.get_appeal(appeal_id)
+        evaluation = self.storage.get_evaluation(appeal["evaluation_id"])
+        checklist = self.storage.get_checklist(evaluation["checklist_id"], evaluation["checklist_version"])
+        conversation = self.storage.get_conversation(evaluation["conversation_id"])
+        cid = appeal["criterion_id"]
+        original = next(r for r in evaluation["results"] if r["criterion_id"] == cid)
+
+        context = appeal_context(_answer_label(original["answer"]), original.get("explanation", ""), appeal["comment"])
+        evaluator = Evaluator(self._provider_factory(model), votes=1)
+        fresh = evaluator.evaluate(conversation, checklist, [cid], extra_context=context)
+        result = fresh["results"][0]
+        if result["answer"] is None:
+            raise ServiceError("модель не дала допустимого ответа — попробуйте ещё раз")
+        opinion = {
+            "answer": result["answer"],
+            "original_answer": original["answer"],
+            "supports_appeal": result["answer"] != original["answer"],
+            "explanation": result["explanation"],
+            "evidence": result["evidence"],
+            "model": fresh["model"],
+            "usage": fresh["usage"],
+            "created_at": now(),
+        }
+        self.storage.set_ai_opinion(appeal_id, opinion)
+        return opinion
+
     def final_result(self, evaluation_id: str) -> dict[str, Any]:
         """Исходная оценка, решения по апелляциям и финальный итог после них."""
         evaluation = self.storage.get_evaluation(evaluation_id)
@@ -330,6 +364,36 @@ class CQAService:
                 "criteria": final.get("criteria", []),
             },
         }
+
+
+def export_dataset(service: CQAService, dataset: str, team_name: str, model_mode: str,
+                   with_appeals: bool = True) -> tuple[dict[str, Any], list[str]]:
+    """results.json по набору: последняя оценка каждого диалога (с решениями по апелляциям) и проверка формата."""
+    storage = service.storage
+    conversations = storage.list_conversations(dataset)
+    if not conversations:
+        raise ServiceError(f"в базе нет диалогов набора {dataset}")
+    latest = storage.latest_evaluations()
+    appealed = {a["evaluation_id"] for a in storage.list_appeals(status="changed")} if with_appeals else set()
+
+    def evaluation_for(cid: str) -> dict[str, Any] | None:
+        brief = latest.get(cid)
+        return storage.get_evaluation(brief["id"]) if brief else None
+
+    def final_for(ev: Mapping[str, Any]) -> dict[str, Any] | None:
+        return service.final_result(ev["id"])["final"] if ev["id"] in appealed else None
+
+    ids = [c.conversation_id for c in conversations]
+    doc = build_results(
+        ids, evaluation_for,
+        checklist_for=lambda ev: storage.get_checklist(ev["checklist_id"], ev["checklist_version"]),
+        final_for=final_for, team_name=team_name, model_mode=model_mode,
+    )
+    return doc, validate_results(doc, ids)
+
+
+def _answer_label(answer: Any) -> str:
+    return {"yes": "Да", "no": "Нет", "na": "N/A"}.get(answer, str(answer))
 
 
 def _rescore_only(base: Mapping[str, Any], checklist: Mapping[str, Any]) -> dict[str, Any]:

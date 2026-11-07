@@ -66,8 +66,11 @@ export const api = {
   evaluation: (id, includeLog = false) => request("GET", `/api/evaluations/${id}${q({ include_log: includeLog || undefined })}`),
   finalResult: (id) => request("GET", `/api/evaluations/${id}/final`),
 
+  exportUrl: (dataset) => `${base}/api/export${q({ dataset })}`,
+
   createAppeal: (evaluationId, criterionId, comment) =>
     request("POST", `/api/evaluations/${evaluationId}/appeals`, { criterion_id: criterionId, comment }),
   appeals: (status) => request("GET", "/api/appeals" + q({ status })),
+  aiOpinion: (appealId) => request("POST", `/api/appeals/${appealId}/ai-opinion`),
   decide: (appealId, body) => request("POST", `/api/appeals/${appealId}/decision`, body),
 };

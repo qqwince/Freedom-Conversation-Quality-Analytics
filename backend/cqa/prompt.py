@@ -14,7 +14,7 @@ from typing import Any
 from cqa.models import Conversation
 from cqa.transcript import ConversationFacts, format_facts, format_transcript
 
-PROMPT_VERSION = "v3"
+PROMPT_VERSION = "v4"
 
 _ROLE = """Ты — эксперт службы контроля качества брокерской компании Freedom Broker.
 Ты оцениваешь работу ОПЕРАТОРА в диалоге с клиентом строго по чек-листу.
@@ -36,6 +36,19 @@ _OUTPUT_RULES = """Как отвечать:
 6. Реплики БОТА и СИСТЕМЫ — контекст, а не действия оператора. Оцениваешь только ОПЕРАТОРА.
 7. «Факты из кода» вычислены автоматически и надёжны; используй их, но решение принимаешь сам.
 8. Верни результат по всем критериям чек-листа, ничего не пропуская."""
+
+
+def appeal_context(original_answer: object, original_explanation: str, comment: str) -> str:
+    """Раздел промпта для второго мнения по апелляции. Модель должна оценить заново и независимо:
+    апелляция — довод человека, а не готовый ответ."""
+    return (
+        "## Апелляция по этому критерию\n"
+        f"Исходная оценка системы: {original_answer}. Обоснование: {original_explanation or '—'}\n"
+        f"Комментарий того, кто оспаривает: «{comment}»\n"
+        "Оцени критерий заново по чек-листу и транскрипту, проверив довод апелляции по репликам. "
+        "Не соглашайся автоматически ни с исходной оценкой, ни с апелляцией: если довод не подтверждается "
+        "транскриптом, оставь исходный ответ и объясни почему. В объяснении прямо скажи, подтверждается ли довод."
+    )
 
 
 @dataclass(frozen=True)
@@ -91,8 +104,10 @@ def build_prompt(
     conversation: Conversation,
     facts: ConversationFacts,
     criteria_ids: Sequence[str] | None = None,
+    extra_context: str | None = None,
 ) -> Prompt:
-    """criteria_ids — оценить только часть критериев (переоценка изменённого критерия)."""
+    """criteria_ids — оценить только часть критериев (переоценка изменённого критерия).
+    extra_context — дополнительный раздел перед заданием (например, апелляция для второго мнения)."""
     section_titles = {s["id"]: s["title"] for s in checklist.get("sections", [])}
     criteria = sorted(checklist["criteria"], key=lambda c: c.get("order", 0))
     if criteria_ids is not None:
@@ -113,6 +128,7 @@ def build_prompt(
         f"## Диалог\nID: {conversation.conversation_id}. Канал: {channel}. Язык: {conversation.language}.",
         "## Факты из кода\n" + format_facts(facts),
         "## Транскрипт\n" + format_transcript(conversation),
+        *([extra_context] if extra_context else []),
         "Оцени оператора по критериям: " + ", ".join(c["id"] for c in criteria) + ".",
     ])
     return Prompt(system=system, user=user)

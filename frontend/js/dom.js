@@ -36,6 +36,11 @@ export function on(root, type, selector, handler) {
   });
 }
 
+/** Номер реплики для людей: с 1 по исходному массиву, как в формате сдачи. Внутри индексы с 0. */
+export function turn(idx) {
+  return idx + 1;
+}
+
 /** Число без лишних нулей: 12.5 → «12.5», 18.75 → «18.75», 10 → «10». */
 export function num(value, digits = 2) {
   if (value == null || Number.isNaN(value)) return "—";

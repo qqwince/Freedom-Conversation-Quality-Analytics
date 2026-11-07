@@ -55,7 +55,8 @@ CREATE TABLE IF NOT EXISTS appeals (
     status        TEXT NOT NULL,       -- open | confirmed | changed
     created_at    TEXT NOT NULL,
     decision      TEXT,                -- JSON: {new_answer, reason, decided_at}
-    decided_at    TEXT
+    decided_at    TEXT,
+    ai_opinion    TEXT                 -- JSON: второе мнение модели для проверяющего
 );
 CREATE INDEX IF NOT EXISTS appeals_evaluation ON appeals(evaluation_id);
 CREATE INDEX IF NOT EXISTS appeals_status ON appeals(status);
@@ -77,6 +78,7 @@ class Storage:
             Path(self.path).parent.mkdir(parents=True, exist_ok=True)
         with self._connect() as db:
             db.executescript(_SCHEMA)
+            _migrate(db)
 
     @contextmanager
     def _connect(self) -> Iterator[sqlite3.Connection]:
@@ -205,10 +207,21 @@ class Storage:
 
     def create_appeal(self, evaluation_id: str, criterion_id: str, comment: str) -> dict[str, Any]:
         appeal = {"id": uuid.uuid4().hex, "evaluation_id": evaluation_id, "criterion_id": criterion_id,
-                  "comment": comment, "status": "open", "created_at": now(), "decision": None, "decided_at": None}
+                  "comment": comment, "status": "open", "created_at": now(), "decision": None, "decided_at": None,
+                  "ai_opinion": None}
         with self._connect() as db:
-            db.execute("INSERT INTO appeals VALUES (?, ?, ?, ?, ?, ?, ?, ?)", tuple(appeal.values()))
+            db.execute("INSERT INTO appeals (id, evaluation_id, criterion_id, comment, status, created_at) "
+                       "VALUES (?, ?, ?, ?, ?, ?)",
+                       (appeal["id"], evaluation_id, criterion_id, comment, "open", appeal["created_at"]))
         return appeal
+
+    def set_ai_opinion(self, appeal_id: str, opinion: dict[str, Any]) -> dict[str, Any]:
+        with self._connect() as db:
+            updated = db.execute("UPDATE appeals SET ai_opinion = ? WHERE id = ?",
+                                 (json.dumps(opinion, ensure_ascii=False), appeal_id)).rowcount
+        if not updated:
+            raise NotFound(f"апелляция {appeal_id} не найдена")
+        return self.get_appeal(appeal_id)
 
     def get_appeal(self, appeal_id: str) -> dict[str, Any]:
         with self._connect() as db:
@@ -245,5 +258,13 @@ class Storage:
 
 def _appeal_row(row: sqlite3.Row) -> dict[str, Any]:
     appeal = dict(row)
-    appeal["decision"] = json.loads(appeal["decision"]) if appeal["decision"] else None
+    for key in ("decision", "ai_opinion"):
+        appeal[key] = json.loads(appeal[key]) if appeal.get(key) else None
     return appeal
+
+
+def _migrate(db: sqlite3.Connection) -> None:
+    """Добавляет колонки, появившиеся после создания базы (базы с хакатона не пересоздаём)."""
+    columns = {r["name"] for r in db.execute("PRAGMA table_info(appeals)")}
+    if "ai_opinion" not in columns:
+        db.execute("ALTER TABLE appeals ADD COLUMN ai_opinion TEXT")

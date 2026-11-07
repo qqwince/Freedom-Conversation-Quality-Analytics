@@ -150,12 +150,18 @@ def format_offset(seconds: float | None) -> str:
 _SPEAKER_LABEL = {"client": "КЛИЕНТ", "operator": "ОПЕРАТОР", "bot": "БОТ", "system": "СИСТЕМА"}
 
 
+def turn(idx: int) -> int:
+    """Номер реплики для людей и модели: с 1 по исходному массиву (как в формате сдачи организаторов).
+    Внутри системы реплики индексируются с 0."""
+    return idx + 1
+
+
 def format_transcript(conv: Conversation) -> str:
-    """Транскрипт для промпта: `[номер] время РОЛЬ: текст`. Время — от начала диалога."""
+    """Транскрипт для промпта: `[номер] время РОЛЬ: текст`. Номер — с 1, время — от начала диалога."""
     lines = []
     for m in conv.transcript:
         text = " ".join(m.text.split())
-        lines.append(f"[{m.idx}] {format_offset(m.offset_sec)} {_SPEAKER_LABEL[m.speaker]}: {text}")
+        lines.append(f"[{turn(m.idx)}] {format_offset(m.offset_sec)} {_SPEAKER_LABEL[m.speaker]}: {text}")
     return "\n".join(lines)
 
 
@@ -165,19 +171,19 @@ def format_facts(facts: ConversationFacts) -> str:
     if facts.first_operator_idx is None:
         lines.append("- Оператор в диалоге не отвечал.")
     else:
-        lines.append(f"- Первая реплика оператора: [{facts.first_operator_idx}]. "
-                     f"Последняя реплика оператора: [{facts.last_operator_idx}].")
+        lines.append(f"- Первая реплика оператора: [{turn(facts.first_operator_idx)}]. "
+                     f"Последняя реплика оператора: [{turn(facts.last_operator_idx)}].")
     if facts.client_messages_before_operator:
-        refs = ", ".join(f"[{i}]" for i in facts.client_messages_before_operator)
+        refs = ", ".join(f"[{turn(i)}]" for i in facts.client_messages_before_operator)
         lines.append(f"- Сообщения клиента до подключения оператора (оператору они известны): {refs}.")
     for e in facts.events:
         if e.type != EventType.RECORDING:
-            lines.append(f"- Системное событие [{e.idx}]: {EVENT_LABELS[e.type]}.")
+            lines.append(f"- Системное событие [{turn(e.idx)}]: {EVENT_LABELS[e.type]}.")
     if facts.ended_by is not None:
         lines.append(f"- После последней реплики оператора: {EVENT_LABELS[facts.ended_by]}.")
     if facts.pauses:
         for p in facts.pauses:
-            lines.append(f"- Долгое ожидание: клиент [{p.after_idx}] → оператор [{p.reply_idx}], "
+            lines.append(f"- Долгое ожидание: клиент [{turn(p.after_idx)}] → оператор [{turn(p.reply_idx)}], "
                          f"{format_offset(p.seconds)}.")
     else:
         lines.append("- Долгих ожиданий ответа оператора после его первого ответа нет.")

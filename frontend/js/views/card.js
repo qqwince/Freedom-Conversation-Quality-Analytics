@@ -2,7 +2,7 @@
 // апелляции по критерию, исходная и финальная оценка, журнал вызовов модели.
 
 import { api } from "../api.js";
-import { $, $$, esc, formatDate, formatOffset, freshRoot, num, on, plural, total } from "../dom.js";
+import { $, $$, esc, formatDate, formatOffset, freshRoot, num, on, plural, total, turn } from "../dom.js";
 import { icon } from "../icons.js";
 import { CHANNEL, SPEAKER, evidenceOf, pill, reviewNotes, sectionTone, totalTone } from "../labels.js";
 import { toast } from "../ui.js";
@@ -186,10 +186,10 @@ function criterionHtml(criterion, view, final, ctx) {
 
 function criterionDetails(criterion, r, appeals, ctx) {
   const evidence = evidenceOf(r).map((e) =>
-    `<button class="cqa-chip" data-msg="${e.msg_idx}" title="${esc(e.proves)}">${icon("messages")} реплика ${e.msg_idx}</button>`).join("");
+    `<button class="cqa-chip" data-msg="${e.msg_idx}" title="${esc(e.proves)}">${icon("messages")} реплика ${turn(e.msg_idx)}</button>`).join("");
   const range = r.expected_at
     ? `<button class="cqa-chip cqa-chip--range" data-range="${r.expected_at.from_msg_idx}-${r.expected_at.to_msg_idx ?? r.expected_at.from_msg_idx}">
-         проверенный участок ${r.expected_at.from_msg_idx}${r.expected_at.to_msg_idx != null && r.expected_at.to_msg_idx !== r.expected_at.from_msg_idx ? "–" + r.expected_at.to_msg_idx : ""}</button>` : "";
+         проверенный участок ${turn(r.expected_at.from_msg_idx)}${r.expected_at.to_msg_idx != null && r.expected_at.to_msg_idx !== r.expected_at.from_msg_idx ? "–" + turn(r.expected_at.to_msg_idx) : ""}</button>` : "";
   const weightNote = criterion.type === "flag" ? "Флаг без баллов"
     : r.answer === "na" ? `Вес ${num(criterion.weight)} распределён между остальными критериями`
     : r.effective_weight != null && Math.abs(r.effective_weight - criterion.weight) > 0.001
@@ -197,7 +197,7 @@ function criterionDetails(criterion, r, appeals, ctx) {
   const reasoning = r.checks?.length ? `
     <details class="small"><summary class="faint" style="cursor:pointer">Как модель проверяла</summary>
       <div class="stack" style="gap:6px;margin-top:8px">${r.checks.map((c) => `
-        <div><span class="faint">${esc(c.q)}</span><br>${esc(c.a)}${c.msg?.length ? ` <span class="faint">· ${c.msg.map((m) => `[${m}]`).join(" ")}</span>` : ""}</div>`).join("")}
+        <div><span class="faint">${esc(c.q)}</span><br>${esc(c.a)}${c.msg?.length ? ` <span class="faint">· ${c.msg.map((m) => `[${turn(m)}]`).join(" ")}</span>` : ""}</div>`).join("")}
       </div></details>` : "";
   const pending = reviewNotes(r);
   const notes = pending.length ? `<div class="small cqa-part">${icon("alert")} ${pending.map(esc).join("; ")}</div>` : "";
@@ -283,14 +283,47 @@ async function submitAppeal(ctx, form) {
 
 // --- Диалог и аудио ----------------------------------------------------------------------
 
+const RECORDING_PAUSED = /приостановлен|paused|тоқтатыл/i;
+const RECORDING_RESUMED = /возобновлен|resumed|жалғастырыл|қайта басталды/i;
+
+/**
+ * Время реплики внутри аудиофайла. Пока запись стоит на паузе («Запись и транскрибирование
+ * приостановлены» … «возобновлены»), время в транскрипте идёт, а в файле — нет, поэтому
+ * длительность всех предыдущих пауз вычитается. Реплика внутри паузы ведёт к моменту паузы.
+ */
+export function audioTimeline(transcript) {
+  const result = new Map();
+  let paused = 0;
+  let pauseStart = null;
+  for (const m of transcript) {
+    if (m.offset_sec == null) continue;
+    if (m.speaker === "system" && RECORDING_PAUSED.test(m.text) && pauseStart == null) pauseStart = m.offset_sec;
+    else if (m.speaker === "system" && RECORDING_RESUMED.test(m.text) && pauseStart != null) {
+      paused += m.offset_sec - pauseStart;
+      pauseStart = null;
+    }
+    result.set(m.idx, (pauseStart ?? m.offset_sec) - paused);
+  }
+  return result;
+}
+
+/** Повтор распознавания: та же реплика того же участника с тем же временем, что и предыдущая. */
+function isAsrDuplicate(m, prev) {
+  return prev && prev.speaker === m.speaker && prev.timestamp === m.timestamp && prev.text.trim() === m.text.trim();
+}
+
 function dialogSection(conv, open) {
   const isCall = conv.channel === "voice call";
-  const messages = conv.transcript.map((m) => {
+  const audioAt = isCall && conv.has_audio ? audioTimeline(conv.transcript) : new Map();
+  const messages = conv.transcript.map((m, i) => {
+    if (isAsrDuplicate(m, conv.transcript[i - 1])) {
+      return `<div class="cqa-msg cqa-msg--system" id="msg-${m.idx}">${turn(m.idx)} · повтор реплики ${turn(m.idx - 1)} (ошибка распознавания речи)</div>`;
+    }
     const time = isCall ? formatOffset(m.offset_sec) : m.timestamp;
-    const seekable = isCall && conv.has_audio && m.offset_sec != null;
+    const at = audioAt.get(m.idx);
     return `<div class="cqa-msg cqa-msg--${esc(m.speaker)}" id="msg-${m.idx}">
-      <div class="cqa-msg__meta"><span>${m.idx} · ${esc(SPEAKER[m.speaker] ?? m.speaker)}</span>
-        ${seekable ? `<button class="cqa-msg__seek" data-seek="${m.offset_sec}" title="Слушать с этого места">${icon("play")} ${esc(time)}</button>` : `<span>${esc(time)}</span>`}</div>
+      <div class="cqa-msg__meta"><span>${turn(m.idx)} · ${esc(SPEAKER[m.speaker] ?? m.speaker)}</span>
+        ${at != null ? `<button class="cqa-msg__seek" data-seek="${at}" title="Слушать с этого места">${icon("play")} ${esc(time)}</button>` : `<span>${esc(time)}</span>`}</div>
       ${esc(m.text)}</div>`;
   }).join("");
   return `
@@ -324,15 +357,17 @@ function focusMessages(el, conv, indexes, cls) {
   const nodes = indexes.map((i) => el.querySelector(`#msg-${i}`)).filter(Boolean);
   nodes.forEach((n) => n.classList.add(cls));
   nodes[0]?.scrollIntoView({ behavior: "smooth", block: "center" });
-  const first = conv.transcript.find((m) => m.idx === indexes[0]);
-  if (conv.channel === "voice call" && first?.offset_sec != null) seek(el, first.offset_sec, false);
+  if (conv.channel === "voice call" && conv.has_audio) {
+    const at = audioTimeline(conv.transcript).get(indexes[0]);
+    if (at != null) seek(el, at, false);
+  }
 }
 
 function seek(el, seconds, play = true) {
   const audio = $("[data-role=audio]", el);
   if (!audio) return;
   const apply = () => {
-    audio.currentTime = Math.max(0, seconds - 1);
+    audio.currentTime = Math.max(0, seconds);
     if (play) audio.play().catch(() => toast("Не удалось воспроизвести запись", "error"));
   };
   if (audio.readyState >= 1) apply();

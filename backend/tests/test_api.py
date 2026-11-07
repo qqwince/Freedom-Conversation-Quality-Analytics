@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import copy
 import json
+import re
 import time
 from typing import Any
 
@@ -31,6 +32,7 @@ class ScriptedProvider:
 
     def generate_json(self, system: str, turns: list[ChatTurn], schema: type) -> LLMResult:
         self.calls += 1
+        self.last_prompt = turns[0].text
         wanted = turns[0].text.rsplit("Оцени оператора по критериям:", 1)[1].strip(" .\n").split(", ")
         results = [{"criterion_id": c, "checks": [], "answer": self.answers[c],
                     "evidence": [{"msg_idx": 5, "proves": "…"}], "explanation": f"{c} — ok"} for c in wanted]
@@ -94,6 +96,26 @@ def test_full_flow(setup):
 
     again = client.post(f"/api/appeals/{appeal['id']}/decision", json={"action": "confirm", "reason": "x"})
     assert again.status_code == 400
+
+
+def test_ai_second_opinion_is_a_hint_not_a_decision(setup):
+    client, provider, _ = setup
+    ev = evaluate(client)
+    appeal = client.post(f"/api/evaluations/{ev['id']}/appeals",
+                         json={"criterion_id": "C6", "comment": "В реплике 8 оператор предупредил об ожидании"}).json()
+    provider.answers["C6"] = "10"
+
+    opinion = client.post(f"/api/appeals/{appeal['id']}/ai-opinion").json()
+    assert opinion["answer"] == 10 and opinion["original_answer"] == 7 and opinion["supports_appeal"] is True
+    # модель видела спорный критерий, исходную оценку и довод апелляции
+    assert "## Апелляция по этому критерию" in provider.last_prompt
+    assert "предупредил об ожидании" in provider.last_prompt
+    assert provider.last_prompt.rstrip().endswith("Оцени оператора по критериям: C6.")
+
+    stored = client.get("/api/appeals?status=open").json()[0]
+    assert stored["status"] == "open"                      # решение по-прежнему за человеком
+    assert stored["ai_opinion"]["answer"] == 10
+    assert client.get(f"/api/evaluations/{ev['id']}/final").json()["final"]["total"] == 90.5
 
 
 def test_decision_validation(setup):
@@ -177,6 +199,17 @@ def test_audio_redirect(setup, monkeypatch):
     response = client.get("/api/conversations/call-1/audio", follow_redirects=False)
     assert response.status_code == 307 and response.headers["location"].startswith("https://cdn.test/a.mp3")
     assert client.get("/api/conversations/call-1").json()["audio_url"] is None   # подпись наружу не отдаём
+
+
+def test_frontend_served_with_build_versioned_assets(setup):
+    client, _, _ = setup
+    page = client.get("/")
+    assert page.status_code == 200 and page.headers["cache-control"] == "no-cache"
+    src = re.search(r'src="(_v/\d+/js/main\.js)"', page.text)
+    assert src, "главный модуль должен грузиться по адресу с меткой запуска"
+    asset = client.get("/" + src.group(1))
+    assert asset.status_code == 200 and "immutable" in asset.headers["cache-control"]
+    assert client.get("/_v/1/../.env").status_code == 404   # выйти из папки интерфейса нельзя
 
 
 def test_extract_audio_src_unescapes(monkeypatch):

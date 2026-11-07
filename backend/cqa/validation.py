@@ -71,6 +71,8 @@ def validate(llm_eval: LLMEvaluation, checklist: Mapping[str, Any], conv: Conver
     criteria = {c["id"]: c for c in checklist["criteria"]}
     expected = list(criteria_ids) if criteria_ids is not None else list(criteria)
     issues: list[Issue] = []
+    for verdict in llm_eval.results:
+        _to_internal_indexes(verdict)
 
     counts = Counter(v.criterion_id for v in llm_eval.results)
     for cid, n in counts.items():
@@ -103,6 +105,18 @@ def validate(llm_eval: LLMEvaluation, checklist: Mapping[str, Any], conv: Conver
     return ValidationResult(verdicts=verdicts, answers=answers, issues=issues)
 
 
+def _to_internal_indexes(v: CriterionVerdict) -> None:
+    """Модель видит и называет реплики с 1 (как в формате организаторов); внутри они с 0."""
+    for e in v.evidence:
+        e.msg_idx -= 1
+    for check in v.checks:
+        check.msg = [i - 1 for i in check.msg]
+    if v.expected_from_msg is not None:
+        v.expected_from_msg -= 1
+    if v.expected_to_msg is not None:
+        v.expected_to_msg -= 1
+
+
 def _fill_evidence_from_checks(v: CriterionVerdict, speakers: Mapping[int, str]) -> None:
     """Некоторые модели указывают реплики только в подпунктах. Тогда доказательства берутся оттуда:
     без них в интерфейсе не будет перехода к нужному сообщению."""
@@ -124,7 +138,7 @@ def _check_verdict(criterion: Mapping[str, Any], v: CriterionVerdict, answer: An
     bad_refs = sorted({e.msg_idx for e in v.evidence if e.msg_idx not in speakers}
                       | {i for i in (v.expected_from_msg, v.expected_to_msg) if i is not None and i not in speakers})
     if bad_refs:
-        issues.append(Issue(cid, "error", f"ссылки на несуществующие реплики: {bad_refs}"))
+        issues.append(Issue(cid, "error", f"ссылки на несуществующие реплики: {[i + 1 for i in bad_refs]}"))
 
     if answer == NA and not (v.na_reason or "").strip():
         issues.append(Issue(cid, "warning", "N/A без объяснения причины"))
