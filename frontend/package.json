@@ -1,0 +1,9 @@
+{
+  "name": "cqa-frontend",
+  "private": true,
+  "type": "module",
+  "description": "Интерфейс CQA: HTML, CSS и ES-модули без сборки. Зависимостей нет, тесты — встроенный node --test.",
+  "scripts": {
+    "test": "node --test \"tests/*.test.js\""
+  }
+}

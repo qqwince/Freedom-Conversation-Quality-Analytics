@@ -29,41 +29,43 @@ export function setLang(id) {
   location.reload();   // исходные русские подписи восстанавливаются заново отрисованной страницей
 }
 
-/** Перевод одной строки интерфейса (без перевода — исходная строка). */
+/** Перевод одной строки интерфейса на текущий язык (без перевода — исходная строка). */
 export function t(text) {
-  if (lang === "ru" || !text) return text;
-  return translate(text) ?? text;
+  return translateTo(text, lang) ?? text;
 }
 
-function exact(text) {
-  const entry = DICT[text];
-  return entry ? entry[INDEX[lang]] : null;
-}
-
-function byRule(text) {
-  for (const [pattern, kz, en] of RULES) {
-    const m = text.match(pattern);
-    if (m) {
-      const tpl = lang === "kz" ? kz : en;
-      return typeof tpl === "function" ? tpl(...m.slice(1)) : tpl.replace(/\$(\d)/g, (_, i) => m[Number(i)]);
-    }
-  }
-  return null;
-}
-
-/** Точное совпадение, перевод по частям «a · b · c» или правило с числами. */
-function translate(text) {
+/**
+ * Перевод строки на язык to: точное совпадение, перевод по частям «a · b · c» или правило с числами.
+ * null — переводить нечего (русский язык, нет кириллицы или строки нет в словаре).
+ */
+export function translateTo(text, to) {
+  if (to === "ru" || !text) return null;
   const trimmed = text.trim();
   if (!trimmed || !/[А-Яа-яЁё]/.test(trimmed)) return null;
-  const whole = exact(trimmed);
+  const whole = exact(trimmed, to);
   if (whole != null) return text.replace(trimmed, whole);
   // «оператор Алина · Линия RU · Чат»: части переводятся по отдельности, разделители остаются
   if (/(^|\s)·\s/.test(trimmed)) {
-    const parts = trimmed.split(/(^·\s|\s·\s)/).map((p) => (p.trim() ? exact(p) ?? byRule(p) ?? p : p));
+    const parts = trimmed.split(/(^·\s|\s·\s)/).map((p) => (p.trim() ? exact(p, to) ?? byRule(p, to) ?? p : p));
     return text.replace(trimmed, parts.join(""));
   }
-  const ruled = byRule(trimmed);
-  if (ruled != null) return text.replace(trimmed, ruled);
+  const ruled = byRule(trimmed, to);
+  return ruled == null ? null : text.replace(trimmed, ruled);
+}
+
+function exact(text, to) {
+  const entry = DICT[text];
+  return entry ? entry[INDEX[to]] : null;
+}
+
+function byRule(text, to) {
+  for (const [pattern, kz, en] of RULES) {
+    const m = text.match(pattern);
+    if (m) {
+      const tpl = to === "kz" ? kz : en;
+      return typeof tpl === "function" ? tpl(...m.slice(1)) : tpl.replace(/\$(\d)/g, (_, i) => m[Number(i)]);
+    }
+  }
   return null;
 }
 
@@ -74,7 +76,7 @@ function translateTree(root) {
   for (let node = walker.nextNode(); node; node = walker.nextNode()) nodes.push(node);
   for (const node of nodes) {
     if (node.parentElement?.closest(SKIP)) continue;
-    const out = translate(node.nodeValue);
+    const out = translateTo(node.nodeValue, lang);
     if (out != null && out !== node.nodeValue) node.nodeValue = out;
   }
   const elements = root.nodeType === 1 ? [root, ...root.querySelectorAll("*")] : [];
@@ -83,12 +85,12 @@ function translateTree(root) {
     for (const attr of ATTRS) {
       const value = el.getAttribute(attr);
       if (value) {
-        const out = translate(value);
+        const out = translateTo(value, lang);
         if (out != null && out !== value) el.setAttribute(attr, out);
       }
     }
     if (el.tagName === "OPTGROUP") {
-      const out = translate(el.label);
+      const out = translateTo(el.label, lang);
       if (out) el.label = out;
     }
   }

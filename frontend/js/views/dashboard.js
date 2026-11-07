@@ -46,7 +46,10 @@ export async function renderDashboard(container) {
     </div>
 
     <section style="margin-top:20px">
-      <h2 style="margin-bottom:10px">Грубые ошибки <span class="faint small" style="font-weight:400">· ${d.critical.length}</span></h2>
+      <div class="row" style="margin-bottom:10px">
+        <h2 class="grow">Грубые ошибки <span class="faint small" style="font-weight:400">· ${d.critical.length}</span></h2>
+        ${d.critical.length ? `<button class="cqa-btn" data-action="all-critical">${icon("alert")} Все в списке диалогов</button>` : ""}
+      </div>
       <div data-role="critical">${criticalList(d.critical)}</div>
     </section>
 
@@ -77,6 +80,11 @@ export async function renderDashboard(container) {
     el.querySelector("[data-role=critical]").innerHTML = criticalList(d.critical);
   });
   on(el, "click", "[data-open]", (e, row) => { location.hash = `#/c/${encodeURIComponent(row.dataset.open)}`; });
+  on(el, "click", "[data-action=all-critical]", () => {
+    // все грубые ошибки — в списке диалогов с фильтром: там же оценка, сортировка и переход в карточку
+    sessionStorage.setItem("cqa.show-critical", "1");
+    location.hash = "#/conversations";
+  });
   on(el, "click", "[data-department]", (e, row) => {
     // линия → список её диалогов
     sessionStorage.setItem("cqa.filter-department", row.dataset.department);

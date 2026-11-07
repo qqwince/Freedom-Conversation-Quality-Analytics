@@ -96,6 +96,7 @@ export const DICT = {
   "Грубые ошибки": ["Өрескел қателер", "Critical errors"],
   "грубая ошибка": ["өрескел қате", "critical error"],
   "грубое нарушение": ["өрескел бұзушылық", "critical violation"],
+  "Все в списке диалогов": ["Барлығы диалогтар тізімінде", "All in the conversation list"],
   "Грубых ошибок не найдено.": ["Өрескел қате табылмады.", "No critical errors found."],
   "Под фильтры ничего не подходит.": ["Сүзгілерге ештеңе сәйкес келмейді.", "Nothing matches the filters."],
   "В наборе нет диалогов": ["Жиынтықта диалог жоқ", "The dataset has no conversations"],

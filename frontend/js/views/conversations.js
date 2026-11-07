@@ -25,6 +25,11 @@ export async function renderConversations(container) {
     sessionStorage.removeItem("cqa.filter-department");
     Object.assign(state, { department, dataset: "", language: "", channel: "", status: "", search: "", page: 0 });
   }
+  if (sessionStorage.getItem("cqa.show-critical")) {   // пришли по кнопке «Все с грубыми ошибками»
+    sessionStorage.removeItem("cqa.show-critical");
+    Object.assign(state, { status: "critical", department: "", dataset: "", language: "", channel: "", search: "",
+      page: 0 });
+  }
   if (sessionStorage.getItem("cqa.show-new")) {     // пришли по пометке «+N новых»
     sessionStorage.removeItem("cqa.show-new");
     Object.assign(state, { status: "new", dataset: "", language: "", channel: "", search: "" });
