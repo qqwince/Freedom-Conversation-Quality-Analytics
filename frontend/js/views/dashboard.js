@@ -54,9 +54,8 @@ export async function renderDashboard(container) {
       <h2 style="margin-bottom:10px">Линии</h2>
       <div class="cqa-list">
         <div class="cqa-list__row cqa-list__head"><span class="grow">Линия</span><span style="width:100px">Средний балл</span>
-          <span style="width:90px">Грубые ошибки</span><span class="cqa-hide-sm" style="width:120px">Обращений сегодня</span>
-          <span class="cqa-hide-sm" style="width:120px">Время на обращение</span>
-          <span class="cqa-hide-sm" style="width:110px">Оценка клиентов</span><span style="width:18px"></span></div>
+          <span style="width:90px">Грубые ошибки</span><span class="cqa-hide-sm" style="width:110px">Операторов</span>
+          <span class="cqa-hide-sm" style="width:130px">Требуют проверки</span><span style="width:18px"></span></div>
         ${d.departments.map(departmentRow).join("")}
       </div>
     </section>
@@ -216,15 +215,12 @@ function criticalRow(c) {
 }
 
 function departmentRow(dep) {
-  const w = dep.workload;
-  const minutes = (s) => `${Math.floor(s / 60)} мин ${String(s % 60).padStart(2, "0")} с`;
   return `<div class="cqa-list__row" data-department="${esc(dep.department)}" title="Открыть диалоги линии">
     <span class="grow" style="font-weight:500">${esc(dep.title)} <span class="xs faint">· ${dep.dialogs} ${plural(dep.dialogs, "диалог", "диалога", "диалогов")}</span></span>
     <span style="width:100px;font-weight:600" class="${totalTone(dep.avg_score)}">${dep.avg_score == null ? "—" : num(dep.avg_score, 1)}</span>
     <span style="width:90px" class="${dep.critical ? "cqa-bad" : "faint"}">${dep.critical}</span>
-    <span class="cqa-hide-sm small" style="width:120px">${w.contacts_today} из ${w.contacts_plan}</span>
-    <span class="cqa-hide-sm small ${w.aht_sec <= w.aht_target_sec ? "cqa-good" : "cqa-part"}" style="width:120px">${minutes(w.aht_sec)}</span>
-    <span class="cqa-hide-sm small ${w.csat >= w.csat_target ? "cqa-good" : "cqa-part"}" style="width:110px">${String(w.csat).replace(".", ",")} из 5</span>
+    <span class="cqa-hide-sm small" style="width:110px">${dep.operators}</span>
+    <span class="cqa-hide-sm small ${dep.needs_review ? "cqa-part" : "faint"}" style="width:130px">${dep.needs_review}</span>
     <span class="faint" style="transform:rotate(-90deg)">${icon("chevron")}</span>
   </div>`;
 }

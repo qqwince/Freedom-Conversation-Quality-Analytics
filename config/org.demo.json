@@ -77,11 +77,6 @@
       "avg_score": 85,
       "critical_errors": 0,
       "criterion_compliance": 90
-    },
-    "workload": {
-      "contacts_per_shift_target": 60,
-      "aht_target_sec": 360,
-      "csat_target": 4.6
     }
   }
 }

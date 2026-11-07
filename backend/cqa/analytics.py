@@ -6,7 +6,6 @@
 
 from __future__ import annotations
 
-import hashlib
 import statistics
 from collections import defaultdict
 from collections.abc import Mapping, Sequence
@@ -143,26 +142,10 @@ def operators_ranking(rows: Sequence[Row]) -> list[dict[str, Any]]:
     return sorted(ranking, key=lambda o: (-(o["avg_score"] or 0), o["critical"], o["operator"]))
 
 
-def _workload(department_id: str | None, targets: Mapping[str, Any]) -> dict[str, Any]:
-    """Нагрузка линии. Служебно: в данных нет планов и смен, поэтому значения генерируются
-    детерминированно до подключения CRM."""
-    seed = int(hashlib.sha1((department_id or "-").encode()).hexdigest(), 16)
-    plan = targets.get("contacts_per_shift_target", 60)
-    return {
-        "contacts_today": plan - 18 + seed % 30,
-        "contacts_plan": plan,
-        "aht_sec": targets.get("aht_target_sec", 360) - 60 + seed % 140,
-        "aht_target_sec": targets.get("aht_target_sec", 360),
-        "csat": round(4.1 + (seed % 8) / 10, 1),
-        "csat_target": targets.get("csat_target", 4.6),
-    }
-
-
 def build_dashboard(rows: Sequence[Row], checklist: Mapping[str, Any], kpi: Mapping[str, Any],
                     open_appeals: int, total_dialogs: int) -> dict[str, Any]:
     scored = [r.total for r in rows if r.total is not None]
     targets = kpi.get("quality_targets", {})
-    workload = kpi.get("workload", {})
     criteria = criteria_stats(rows, checklist)
     avg = _avg(scored)
     critical_rows = [r for r in rows if r.critical]
@@ -174,7 +157,8 @@ def build_dashboard(rows: Sequence[Row], checklist: Mapping[str, Any], kpi: Mapp
         departments.append({
             "department": dep_id, "title": group[0].department_title, "dialogs": len(group),
             "avg_score": _avg(dep_scores), "critical": sum(r.critical for r in group),
-            "workload": _workload(dep_id, workload),
+            "operators": len({r.operator for r in group if r.operator}),
+            "needs_review": sum(r.needs_review for r in group),
         })
 
     return {

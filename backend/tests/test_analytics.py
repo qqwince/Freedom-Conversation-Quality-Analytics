@@ -80,12 +80,11 @@ def test_feedback_uses_model_wording_but_code_numbers(checklist):
 
 def test_dashboard(checklist):
     rows = [row("a", "Алина", BASE, checklist), row("b", "Тимур", dict(BASE, C8="yes"), checklist, critical=True)]
-    kpi = {"quality_targets": {"avg_score": 85, "critical_errors": 0, "criterion_compliance": 90},
-           "workload": {"contacts_per_shift_target": 60}}
+    kpi = {"quality_targets": {"avg_score": 85, "critical_errors": 0, "criterion_compliance": 90}}
     d = build_dashboard(rows, checklist, kpi, open_appeals=1, total_dialogs=3)
     assert d["summary"]["evaluated"] == 2 and d["summary"]["dialogs"] == 3 and d["summary"]["critical"] == 1
     assert d["critical"][0]["conversation_id"] == "b" and d["critical"][0]["reason"] == "оскорбил клиента"
-    assert d["departments"][0]["workload"]["contacts_plan"] == 60
+    assert d["departments"][0]["operators"] == 2 and "workload" not in d["departments"][0]   # только реальные данные
     assert sum(b["count"] for b in d["distribution"]) == 2
     c7 = next(c for c in d["criteria"] if c["criterion_id"] == "C7")
     assert c7["compliance"] == 0.0 and c7["gain"] == 7.69

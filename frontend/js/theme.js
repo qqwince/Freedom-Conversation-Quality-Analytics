@@ -13,11 +13,19 @@ export function currentTheme() {
   return THEMES.some((t) => t.id === saved) ? saved : "dark";
 }
 
+/**
+ * Тема применяется к корню компонента. Фон и цветовую схему всей страницы меняем только
+ * в отдельной странице (data-standalone): встроенный в Dynamics 365 компонент не трогает
+ * оформление страницы-хозяина.
+ */
 export function applyTheme(id, root) {
   root.dataset.theme = id;
-  const bg = getComputedStyle(root).getPropertyValue("--cqa-bg").trim();
-  document.documentElement.style.background = bg;
-  document.body.style.background = bg;
-  document.documentElement.style.colorScheme = id === "light" ? "light" : "dark";
+  root.style.colorScheme = id === "light" ? "light" : "dark";
+  if (root.hasAttribute("data-standalone")) {
+    const bg = getComputedStyle(root).getPropertyValue("--cqa-bg").trim();
+    document.documentElement.style.background = bg;
+    document.body.style.background = bg;
+    document.documentElement.style.colorScheme = root.style.colorScheme;
+  }
   writePref("theme", id);
 }
