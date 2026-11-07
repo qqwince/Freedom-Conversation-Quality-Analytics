@@ -3,34 +3,93 @@
   "$id": "cqa/checklist.schema.json",
   "title": "Checklist",
   "type": "object",
-  "required": ["id", "version", "name", "scoring", "sections", "criteria"],
+  "required": [
+    "id",
+    "version",
+    "name",
+    "scoring",
+    "sections",
+    "criteria"
+  ],
   "properties": {
-    "id": { "type": "string" },
-    "version": { "type": "integer", "minimum": 1 },
-    "name": { "type": "string" },
-    "channel_scope": { "type": "array", "items": { "enum": ["agent chat", "voice call"] } },
-    "scoring": {
-      "type": "object",
-      "required": ["max_total", "rounding_digits"],
-      "properties": {
-        "max_total": { "type": "number" },
-        "rounding_digits": { "type": "integer", "minimum": 0 },
-        "rounding_mode": { "enum": ["ROUND_HALF_UP"] },
-        "na_redistribution": { "enum": ["proportional"] },
-        "critical_affects_total": { "type": "boolean" }
+    "id": {
+      "type": "string"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "name": {
+      "type": "string"
+    },
+    "channel_scope": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "agent chat",
+          "voice call"
+        ]
       }
     },
-    "context_rules": { "type": "array", "items": { "type": "string" } },
-    "evidence_rules": { "type": "array", "items": { "type": "string" } },
+    "scoring": {
+      "type": "object",
+      "required": [
+        "max_total",
+        "rounding_digits"
+      ],
+      "properties": {
+        "max_total": {
+          "type": "number"
+        },
+        "rounding_digits": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "rounding_mode": {
+          "enum": [
+            "ROUND_HALF_UP"
+          ]
+        },
+        "na_redistribution": {
+          "enum": [
+            "proportional"
+          ]
+        },
+        "critical_affects_total": {
+          "type": "boolean"
+        }
+      }
+    },
+    "context_rules": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "evidence_rules": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
     "sections": {
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["id", "title"],
+        "required": [
+          "id",
+          "title"
+        ],
         "properties": {
-          "id": { "type": "string" },
-          "title": { "type": "string" },
-          "order": { "type": "integer" }
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "order": {
+            "type": "integer"
+          }
         }
       }
     },
@@ -39,26 +98,68 @@
       "minItems": 1,
       "items": {
         "type": "object",
-        "required": ["id", "section", "title", "type", "weight", "na_allowed", "description"],
+        "required": [
+          "id",
+          "section",
+          "title",
+          "type",
+          "weight",
+          "na_allowed",
+          "description"
+        ],
         "properties": {
-          "id": { "type": "string" },
-          "section": { "type": "string" },
-          "order": { "type": "integer" },
-          "title": { "type": "string" },
-          "type": { "enum": ["binary", "scale", "flag"] },
-          "weight": { "type": "number", "minimum": 0 },
-          "na_allowed": { "type": "boolean" },
-          "na_rule": { "type": ["string", "null"] },
-          "description": { "type": "string" },
+          "id": {
+            "type": "string"
+          },
+          "section": {
+            "type": "string"
+          },
+          "order": {
+            "type": "integer"
+          },
+          "title": {
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "binary",
+              "scale",
+              "flag"
+            ]
+          },
+          "weight": {
+            "type": "number",
+            "minimum": 0
+          },
+          "na_allowed": {
+            "type": "boolean"
+          },
+          "na_rule": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "description": {
+            "type": "string"
+          },
           "steps": {
             "type": "array",
             "description": "Только для type = scale. Верхняя ступень даёт полный вес.",
             "items": {
               "type": "object",
-              "required": ["value", "text"],
+              "required": [
+                "value",
+                "text"
+              ],
               "properties": {
-                "value": { "type": "number", "minimum": 0 },
-                "text": { "type": "string" }
+                "value": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "text": {
+                  "type": "string"
+                }
               }
             }
           },
@@ -67,14 +168,52 @@
             "description": "Только для type = flag.",
             "items": {
               "type": "object",
-              "required": ["id", "title"],
-              "properties": { "id": { "type": "string" }, "title": { "type": "string" } }
+              "required": [
+                "id",
+                "title"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                }
+              }
             }
           },
-          "checks": { "type": "array", "items": { "type": "string" } },
-          "decision": { "type": "string" },
-          "wait_threshold_seconds": { "type": "integer" },
-          "is_critical_flag": { "type": "boolean" }
+          "checks": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "decision": {
+            "type": "string"
+          },
+          "wait_threshold_seconds": {
+            "type": "integer"
+          },
+          "is_critical_flag": {
+            "type": "boolean"
+          },
+          "validators": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "identity_event",
+                "closing_interrupted"
+              ]
+            },
+            "description": "Дополнительные проверки ответа модели кодом (cqa/validation.py)."
+          },
+          "examples": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Короткие разобранные примеры (few-shot) для промпта."
+          }
         }
       }
     }

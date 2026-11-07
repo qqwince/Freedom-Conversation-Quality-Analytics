@@ -5,3 +5,8 @@ data/
 __pycache__/
 .venv/
 node_modules/
+eval/runs/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+eval/reports/

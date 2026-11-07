@@ -1,0 +1,1274 @@
+{
+  "dataset": "DEV",
+  "checklist_id": "chat-default",
+  "checklist_version": 1,
+  "items": {
+    "p1-ru-001": {
+      "split": "tune",
+      "status": "draft",
+      "language": "RU",
+      "channel": "agent chat",
+      "answers": {
+        "C1": "yes",
+        "C2": "na",
+        "C3": "na",
+        "C4": 20,
+        "C5": "yes",
+        "C6": 10,
+        "C7": "no",
+        "C8": "no"
+      },
+      "notes": {},
+      "labeled_by": "claude-draft"
+    },
+    "p1-ru-002": {
+      "split": "test",
+      "status": "draft",
+      "language": "RU",
+      "channel": "agent chat",
+      "answers": {
+        "C1": "yes",
+        "C2": "yes",
+        "C3": "yes",
+        "C4": 20,
+        "C5": "yes",
+        "C6": 10,
+        "C7": "yes",
+        "C8": "no"
+      },
+      "notes": {
+        "C3": "оператор запросил идентификацию, клиент отказался, данные не раскрыты (трактовка T6)"
+      },
+      "labeled_by": "claude-draft"
+    },
+    "p1-ru-003": {
+      "split": "test",
+      "status": "draft",
+      "language": "RU",
+      "channel": "agent chat",
+      "answers": {
+        "C1": "yes",
+        "C2": "yes",
+        "C3": "na",
+        "C4": 10,
+        "C5": "yes",
+        "C6": 4,
+        "C7": "no",
+        "C8": "no"
+      },
+      "notes": {
+        "C4": "вопрос о комиссии не закрыт",
+        "C6": "ответ [14] не на вопрос, клиент переспрашивал"
+      },
+      "labeled_by": "claude-draft"
+    },
+    "p1-ru-004": {
+      "split": "tune",
+      "status": "draft",
+      "language": "RU",
+      "channel": "agent chat",
+      "answers": {
+        "C1": "yes",
+        "C2": "na",
+        "C3": "na",
+        "C4": 20,
+        "C5": "yes",
+        "C6": 10,
+        "C7": "no",
+        "C8": "no"
+      },
+      "notes": {
+        "C2": "«верно?» — подтверждение, данных хватало"
+      },
+      "labeled_by": "claude-draft"
+    },
+    "p1-ru-005": {
+      "split": "tune",
+      "status": "draft",
+      "language": "RU",
+      "channel": "agent chat",
+      "answers": {
+        "C1": "yes",
+        "C2": "na",
+        "C3": "na",
+        "C4": 10,
+        "C5": "yes",
+        "C6": 4,
+        "C7": "yes",
+        "C8": "no"
+      },
+      "notes": {
+        "C4": "кто берёт комиссию — не ответил явно",
+        "C6": "[11] непонятно, клиент переспросил"
+      },
+      "labeled_by": "claude-draft"
+    },
+    "p1-ru-006": {
+      "split": "tune",
+      "status": "draft",
+      "language": "RU",
+      "channel": "agent chat",
+      "answers": {
+        "C1": "yes",
+        "C2": "yes",
+        "C3": "yes",
+        "C4": 20,
+        "C5": "yes",
+        "C6": 10,
+        "C7": "yes",
+        "C8": "no"
+      },
+      "notes": {},
+      "labeled_by": "claude-draft"
+    },
+    "p1-ru-007": {
+      "split": "tune",
+      "status": "draft",
+      "language": "RU",
+      "channel": "agent chat",
+      "answers": {
+        "C1": "yes",
+        "C2": "na",
+        "C3": "na",
+        "C4": 10,
+        "C5": "yes",
+        "C6": 4,
+        "C7": "no",
+        "C8": "no"
+      },
+      "notes": {
+        "C4": "когда повторять вывод — не ответил",
+        "C6": "вопрос проигнорирован, клиент повторил"
+      },
+      "labeled_by": "claude-draft"
+    },
+    "p1-ru-008": {
+      "split": "tune",
+      "status": "draft",
+      "language": "RU",
+      "channel": "agent chat",
+      "answers": {
+        "C1": "yes",
+        "C2": "na",
+        "C3": "na",
+        "C4": 20,
+        "C5": "yes",
+        "C6": 10,
+        "C7": "no",
+        "C8": "no"
+      },
+      "notes": {},
+      "labeled_by": "claude-draft"
+    },
+    "p1-ru-009": {
+      "split": "tune",
+      "status": "draft",
+      "language": "RU",
+      "channel": "agent chat",
+      "answers": {
+        "C1": "yes",
+        "C2": "yes",
+        "C3": "no",
+        "C4": 5,
+        "C5": "no",
+        "C6": 4,
+        "C7": "yes",
+        "C8": "no"
+      },
+      "notes": {
+        "C3": "раскрыл ограничение на счёте без идентификации",
+        "C4": "спорно 5 или 10",
+        "C8": "спорно — раскрытие данных счёта неподтверждённому (T8)"
+      },
+      "labeled_by": "claude-draft"
+    },
+    "p1-ru-010": {
+      "split": "tune",
+      "status": "draft",
+      "language": "RU",
+      "channel": "agent chat",
+      "answers": {
+        "C1": "yes",
+        "C2": "yes",
+        "C3": "yes",
+        "C4": 20,
+        "C5": "yes",
+        "C6": 10,
+        "C7": "yes",
+        "C8": "no"
+      },
+      "notes": {},
+      "labeled_by": "claude-draft"
+    },
+    "p1-ru-011": {
+      "split": "tune",
+      "status": "draft",
+      "language": "RU",
+      "channel": "agent chat",
+      "answers": {
+        "C1": "yes",
+        "C2": "na",
+        "C3": "na",
+        "C4": 20,
+        "C5": "yes",
+        "C6": 10,
+        "C7": "no",
+        "C8": "no"
+      },
+      "notes": {},
+      "labeled_by": "claude-draft"
+    },
+    "p1-ru-012": {
+      "split": "test",
+      "status": "draft",
+      "language": "RU",
+      "channel": "agent chat",
+      "answers": {
+        "C1": "yes",
+        "C2": "na",
+        "C3": "na",
+        "C4": 20,
+        "C5": "yes",
+        "C6": 10,
+        "C7": "na",
+        "C8": "no"
+      },
+      "notes": {
+        "C7": "связь прервалась через 18 с после ответа клиента"
+      },
+      "labeled_by": "claude-draft"
+    },
+    "p1-ru-013": {
+      "split": "tune",
+      "status": "draft",
+      "language": "RU",
+      "channel": "agent chat",
+      "answers": {
+        "C1": "yes",
+        "C2": "na",
+        "C3": "na",
+        "C4": 20,
+        "C5": "yes",
+        "C6": 10,
+        "C7": "yes",
+        "C8": "no"
+      },
+      "notes": {},
+      "labeled_by": "claude-draft"
+    },
+    "p1-ru-014": {
+      "split": "test",
+      "status": "draft",
+      "language": "RU",
+      "channel": "agent chat",
+      "answers": {
+        "C1": "no",
+        "C2": "no",
+        "C3": "na",
+        "C4": 20,
+        "C5": "no",
+        "C6": 7,
+        "C7": "no",
+        "C8": "no"
+      },
+      "notes": {
+        "C1": "«Привет», не представился",
+        "C2": "переспросил известное",
+        "C5": "не отреагировал на «я уже писал»"
+      },
+      "labeled_by": "claude-draft"
+    },
+    "p1-ru-015": {
+      "split": "tune",
+      "status": "draft",
+      "language": "RU",
+      "channel": "agent chat",
+      "answers": {
+        "C1": "yes",
+        "C2": "na",
+        "C3": "na",
+        "C4": 20,
+        "C5": "yes",
+        "C6": 10,
+        "C7": "yes",
+        "C8": "no"
+      },
+      "notes": {},
+      "labeled_by": "claude-draft"
+    },
+    "p1-ru-016": {
+      "split": "tune",
+      "status": "draft",
+      "language": "RU",
+      "channel": "agent chat",
+      "answers": {
+        "C1": "yes",
+        "C2": "no",
+        "C3": "na",
+        "C4": 20,
+        "C5": "no",
+        "C6": 4,
+        "C7": "no",
+        "C8": "no"
+      },
+      "notes": {
+        "C4": "спорно 20 или 15 — сначала неверный совет",
+        "C5": "«Ну, тогда сайт» пренебрежительно"
+      },
+      "labeled_by": "claude-draft"
+    },
+    "p1-ru-017": {
+      "split": "test",
+      "status": "draft",
+      "language": "RU",
+      "channel": "agent chat",
+      "answers": {
+        "C1": "yes",
+        "C2": "yes",
+        "C3": "na",
+        "C4": 20,
+        "C5": "yes",
+        "C6": 10,
+        "C7": "no",
+        "C8": "no"
+      },
+      "notes": {
+        "C2": "спорно — клиент уже писал, что найдёт тикер"
+      },
+      "labeled_by": "claude-draft"
+    },
+    "p1-ru-018": {
+      "split": "tune",
+      "status": "draft",
+      "language": "RU",
+      "channel": "agent chat",
+      "answers": {
+        "C1": "yes",
+        "C2": "no",
+        "C3": "no",
+        "C4": 0,
+        "C5": "no",
+        "C6": 0,
+        "C7": "no",
+        "C8": "no"
+      },
+      "notes": {
+        "C3": "спорно no/na — утверждал о приказе клиента без идентификации",
+        "C6": "спорно 0 или 4"
+      },
+      "labeled_by": "claude-draft"
+    },
+    "p1-ru-019": {
+      "split": "test",
+      "status": "draft",
+      "language": "RU",
+      "channel": "agent chat",
+      "answers": {
+        "C1": "yes",
+        "C2": "yes",
+        "C3": "na",
+        "C4": 20,
+        "C5": "yes",
+        "C6": 10,
+        "C7": "no",
+        "C8": "no"
+      },
+      "notes": {},
+      "labeled_by": "claude-draft"
+    },
+    "p1-ru-020": {
+      "split": "tune",
+      "status": "draft",
+      "language": "RU",
+      "channel": "agent chat",
+      "answers": {
+        "C1": "yes",
+        "C2": "na",
+        "C3": "na",
+        "C4": 20,
+        "C5": "yes",
+        "C6": 10,
+        "C7": "no",
+        "C8": "no"
+      },
+      "notes": {},
+      "labeled_by": "claude-draft"
+    },
+    "p1-ru-021": {
+      "split": "tune",
+      "status": "draft",
+      "language": "RU",
+      "channel": "agent chat",
+      "answers": {
+        "C1": "yes",
+        "C2": "na",
+        "C3": "na",
+        "C4": 20,
+        "C5": "yes",
+        "C6": 10,
+        "C7": "no",
+        "C8": "no"
+      },
+      "notes": {},
+      "labeled_by": "claude-draft"
+    },
+    "p1-ru-022": {
+      "split": "tune",
+      "status": "draft",
+      "language": "RU",
+      "channel": "agent chat",
+      "answers": {
+        "C1": "yes",
+        "C2": "no",
+        "C3": "na",
+        "C4": 0,
+        "C5": "no",
+        "C6": 10,
+        "C7": "no",
+        "C8": "yes"
+      },
+      "notes": {},
+      "labeled_by": "claude-draft",
+      "flag_subtypes": {
+        "C8": [
+          "bypass_service"
+        ]
+      }
+    },
+    "p1-ru-023": {
+      "split": "test",
+      "status": "draft",
+      "language": "RU",
+      "channel": "agent chat",
+      "answers": {
+        "C1": "yes",
+        "C2": "na",
+        "C3": "na",
+        "C4": 20,
+        "C5": "yes",
+        "C6": 10,
+        "C7": "no",
+        "C8": "yes"
+      },
+      "notes": {},
+      "labeled_by": "claude-draft",
+      "flag_subtypes": {
+        "C8": [
+          "bypass_service"
+        ]
+      }
+    },
+    "p1-ru-024": {
+      "split": "tune",
+      "status": "draft",
+      "language": "RU",
+      "channel": "agent chat",
+      "answers": {
+        "C1": "yes",
+        "C2": "na",
+        "C3": "na",
+        "C4": 15,
+        "C5": "yes",
+        "C6": 10,
+        "C7": "no",
+        "C8": "no"
+      },
+      "notes": {
+        "C4": "не сказал, как перевести с D-счёта"
+      },
+      "labeled_by": "claude-draft"
+    },
+    "p1-ru-025": {
+      "split": "tune",
+      "status": "draft",
+      "language": "RU",
+      "channel": "agent chat",
+      "answers": {
+        "C1": "yes",
+        "C2": "yes",
+        "C3": "na",
+        "C4": "na",
+        "C5": "yes",
+        "C6": 10,
+        "C7": "na",
+        "C8": "no"
+      },
+      "notes": {
+        "C2": "спорно yes/na — запроса ещё не было"
+      },
+      "labeled_by": "claude-draft"
+    },
+    "p1-ru-026": {
+      "split": "test",
+      "status": "draft",
+      "language": "RU",
+      "channel": "agent chat",
+      "answers": {
+        "C1": "yes",
+        "C2": "no",
+        "C3": "na",
+        "C4": 0,
+        "C5": "no",
+        "C6": 4,
+        "C7": "no",
+        "C8": "no"
+      },
+      "notes": {},
+      "labeled_by": "claude-draft"
+    },
+    "p1-ru-027": {
+      "split": "tune",
+      "status": "draft",
+      "language": "RU",
+      "channel": "agent chat",
+      "answers": {
+        "C1": "yes",
+        "C2": "na",
+        "C3": "na",
+        "C4": 20,
+        "C5": "yes",
+        "C6": 10,
+        "C7": "no",
+        "C8": "no"
+      },
+      "notes": {},
+      "labeled_by": "claude-draft"
+    },
+    "p1-ru-028": {
+      "split": "test",
+      "status": "draft",
+      "language": "RU",
+      "channel": "agent chat",
+      "answers": {
+        "C1": "yes",
+        "C2": "na",
+        "C3": "na",
+        "C4": 20,
+        "C5": "yes",
+        "C6": 10,
+        "C7": "no",
+        "C8": "no"
+      },
+      "notes": {
+        "C6": "предупредил об ожидании [9]"
+      },
+      "labeled_by": "claude-draft"
+    },
+    "p1-ru-029": {
+      "split": "tune",
+      "status": "draft",
+      "language": "RU",
+      "channel": "agent chat",
+      "answers": {
+        "C1": "yes",
+        "C2": "na",
+        "C3": "na",
+        "C4": 20,
+        "C5": "no",
+        "C6": 10,
+        "C7": "no",
+        "C8": "yes"
+      },
+      "notes": {},
+      "labeled_by": "claude-draft",
+      "flag_subtypes": {
+        "C8": [
+          "insult"
+        ]
+      }
+    },
+    "p1-ru-030": {
+      "split": "tune",
+      "status": "draft",
+      "language": "RU",
+      "channel": "agent chat",
+      "answers": {
+        "C1": "yes",
+        "C2": "yes",
+        "C3": "na",
+        "C4": 20,
+        "C5": "yes",
+        "C6": 10,
+        "C7": "no",
+        "C8": "no"
+      },
+      "notes": {},
+      "labeled_by": "claude-draft"
+    },
+    "p1-kz-001": {
+      "split": "test",
+      "status": "draft",
+      "language": "KZ",
+      "channel": "agent chat",
+      "answers": {
+        "C1": "yes",
+        "C2": "na",
+        "C3": "na",
+        "C4": 20,
+        "C5": "yes",
+        "C6": 10,
+        "C7": "no",
+        "C8": "no"
+      },
+      "notes": {},
+      "labeled_by": "claude-draft"
+    },
+    "p1-kz-002": {
+      "split": "tune",
+      "status": "draft",
+      "language": "KZ",
+      "channel": "agent chat",
+      "answers": {
+        "C1": "yes",
+        "C2": "na",
+        "C3": "na",
+        "C4": 20,
+        "C5": "yes",
+        "C6": 10,
+        "C7": "no",
+        "C8": "no"
+      },
+      "notes": {},
+      "labeled_by": "claude-draft"
+    },
+    "p1-kz-003": {
+      "split": "tune",
+      "status": "draft",
+      "language": "KZ",
+      "channel": "agent chat",
+      "answers": {
+        "C1": "yes",
+        "C2": "yes",
+        "C3": "yes",
+        "C4": 20,
+        "C5": "yes",
+        "C6": 10,
+        "C7": "yes",
+        "C8": "no"
+      },
+      "notes": {},
+      "labeled_by": "claude-draft"
+    },
+    "p1-kz-004": {
+      "split": "tune",
+      "status": "draft",
+      "language": "KZ",
+      "channel": "agent chat",
+      "answers": {
+        "C1": "yes",
+        "C2": "na",
+        "C3": "na",
+        "C4": 20,
+        "C5": "yes",
+        "C6": 10,
+        "C7": "no",
+        "C8": "no"
+      },
+      "notes": {},
+      "labeled_by": "claude-draft"
+    },
+    "p1-kz-005": {
+      "split": "test",
+      "status": "draft",
+      "language": "KZ",
+      "channel": "agent chat",
+      "answers": {
+        "C1": "yes",
+        "C2": "na",
+        "C3": "na",
+        "C4": 20,
+        "C5": "yes",
+        "C6": 4,
+        "C7": "no",
+        "C8": "no"
+      },
+      "notes": {
+        "C6": "сначала неверный путь, клиент переспросил",
+        "C7": "только «Жақсы», без прощания"
+      },
+      "labeled_by": "claude-draft"
+    },
+    "p1-kz-006": {
+      "split": "tune",
+      "status": "draft",
+      "language": "KZ",
+      "channel": "agent chat",
+      "answers": {
+        "C1": "yes",
+        "C2": "na",
+        "C3": "na",
+        "C4": 20,
+        "C5": "yes",
+        "C6": 10,
+        "C7": "no",
+        "C8": "no"
+      },
+      "notes": {},
+      "labeled_by": "claude-draft"
+    },
+    "p1-kz-007": {
+      "split": "tune",
+      "status": "draft",
+      "language": "KZ",
+      "channel": "agent chat",
+      "answers": {
+        "C1": "yes",
+        "C2": "na",
+        "C3": "na",
+        "C4": 20,
+        "C5": "yes",
+        "C6": 10,
+        "C7": "no",
+        "C8": "no"
+      },
+      "notes": {},
+      "labeled_by": "claude-draft"
+    },
+    "p1-kz-008": {
+      "split": "tune",
+      "status": "draft",
+      "language": "KZ",
+      "channel": "agent chat",
+      "answers": {
+        "C1": "no",
+        "C2": "no",
+        "C3": "na",
+        "C4": 20,
+        "C5": "no",
+        "C6": 7,
+        "C7": "no",
+        "C8": "no"
+      },
+      "notes": {
+        "C1": "«Сәлем», не представился",
+        "C2": "переспросил сайт",
+        "C7": "не попрощался"
+      },
+      "labeled_by": "claude-draft"
+    },
+    "p1-kz-009": {
+      "split": "tune",
+      "status": "draft",
+      "language": "KZ",
+      "channel": "agent chat",
+      "answers": {
+        "C1": "yes",
+        "C2": "na",
+        "C3": "na",
+        "C4": 20,
+        "C5": "yes",
+        "C6": 10,
+        "C7": "no",
+        "C8": "no"
+      },
+      "notes": {},
+      "labeled_by": "claude-draft"
+    },
+    "p1-kz-010": {
+      "split": "test",
+      "status": "draft",
+      "language": "KZ",
+      "channel": "agent chat",
+      "answers": {
+        "C1": "yes",
+        "C2": "na",
+        "C3": "na",
+        "C4": 20,
+        "C5": "yes",
+        "C6": 10,
+        "C7": "no",
+        "C8": "no"
+      },
+      "notes": {},
+      "labeled_by": "claude-draft"
+    },
+    "p1-kz-011": {
+      "split": "tune",
+      "status": "draft",
+      "language": "KZ",
+      "channel": "agent chat",
+      "answers": {
+        "C1": "yes",
+        "C2": "na",
+        "C3": "na",
+        "C4": 15,
+        "C5": "yes",
+        "C6": 10,
+        "C7": "na",
+        "C8": "no"
+      },
+      "notes": {
+        "C4": "не сказал, как перевести с D-счёта",
+        "C7": "связь прервалась"
+      },
+      "labeled_by": "claude-draft"
+    },
+    "p1-kz-012": {
+      "split": "tune",
+      "status": "draft",
+      "language": "KZ",
+      "channel": "agent chat",
+      "answers": {
+        "C1": "yes",
+        "C2": "yes",
+        "C3": "na",
+        "C4": 20,
+        "C5": "yes",
+        "C6": 10,
+        "C7": "yes",
+        "C8": "no"
+      },
+      "notes": {
+        "C3": "спорно na — до проверки счёта не дошло"
+      },
+      "labeled_by": "claude-draft"
+    },
+    "p1-kz-013": {
+      "split": "tune",
+      "status": "draft",
+      "language": "KZ",
+      "channel": "agent chat",
+      "answers": {
+        "C1": "yes",
+        "C2": "na",
+        "C3": "na",
+        "C4": 20,
+        "C5": "yes",
+        "C6": 10,
+        "C7": "no",
+        "C8": "yes"
+      },
+      "notes": {},
+      "labeled_by": "claude-draft",
+      "flag_subtypes": {
+        "C8": [
+          "bypass_service"
+        ]
+      }
+    },
+    "p1-kz-014": {
+      "split": "tune",
+      "status": "draft",
+      "language": "KZ",
+      "channel": "agent chat",
+      "answers": {
+        "C1": "yes",
+        "C2": "na",
+        "C3": "na",
+        "C4": 20,
+        "C5": "yes",
+        "C6": 10,
+        "C7": "no",
+        "C8": "no"
+      },
+      "notes": {},
+      "labeled_by": "claude-draft"
+    },
+    "p1-kz-015": {
+      "split": "test",
+      "status": "draft",
+      "language": "KZ",
+      "channel": "agent chat",
+      "answers": {
+        "C1": "yes",
+        "C2": "na",
+        "C3": "no",
+        "C4": 5,
+        "C5": "no",
+        "C6": 4,
+        "C7": "yes",
+        "C8": "no"
+      },
+      "notes": {
+        "C3": "раскрыл ограничение без идентификации",
+        "C8": "спорно (T8)"
+      },
+      "labeled_by": "claude-draft"
+    },
+    "p1-en-001": {
+      "split": "tune",
+      "status": "draft",
+      "language": "EN",
+      "channel": "agent chat",
+      "answers": {
+        "C1": "yes",
+        "C2": "na",
+        "C3": "na",
+        "C4": 20,
+        "C5": "yes",
+        "C6": 10,
+        "C7": "no",
+        "C8": "no"
+      },
+      "notes": {},
+      "labeled_by": "claude-draft"
+    },
+    "p1-en-002": {
+      "split": "tune",
+      "status": "draft",
+      "language": "EN",
+      "channel": "agent chat",
+      "answers": {
+        "C1": "yes",
+        "C2": "na",
+        "C3": "na",
+        "C4": 20,
+        "C5": "yes",
+        "C6": 10,
+        "C7": "no",
+        "C8": "no"
+      },
+      "notes": {},
+      "labeled_by": "claude-draft"
+    },
+    "p1-en-003": {
+      "split": "tune",
+      "status": "draft",
+      "language": "EN",
+      "channel": "agent chat",
+      "answers": {
+        "C1": "yes",
+        "C2": "na",
+        "C3": "na",
+        "C4": 20,
+        "C5": "yes",
+        "C6": 10,
+        "C7": "no",
+        "C8": "no"
+      },
+      "notes": {},
+      "labeled_by": "claude-draft"
+    },
+    "p1-en-004": {
+      "split": "tune",
+      "status": "draft",
+      "language": "EN",
+      "channel": "agent chat",
+      "answers": {
+        "C1": "yes",
+        "C2": "na",
+        "C3": "na",
+        "C4": 20,
+        "C5": "yes",
+        "C6": 10,
+        "C7": "no",
+        "C8": "no"
+      },
+      "notes": {},
+      "labeled_by": "claude-draft"
+    },
+    "p1-en-005": {
+      "split": "tune",
+      "status": "draft",
+      "language": "EN",
+      "channel": "agent chat",
+      "answers": {
+        "C1": "yes",
+        "C2": "na",
+        "C3": "na",
+        "C4": 20,
+        "C5": "yes",
+        "C6": 10,
+        "C7": "no",
+        "C8": "no"
+      },
+      "notes": {},
+      "labeled_by": "claude-draft"
+    },
+    "p1-en-006": {
+      "split": "tune",
+      "status": "draft",
+      "language": "EN",
+      "channel": "agent chat",
+      "answers": {
+        "C1": "yes",
+        "C2": "yes",
+        "C3": "yes",
+        "C4": 20,
+        "C5": "yes",
+        "C6": 10,
+        "C7": "yes",
+        "C8": "no"
+      },
+      "notes": {},
+      "labeled_by": "claude-draft"
+    },
+    "p1-en-007": {
+      "split": "test",
+      "status": "draft",
+      "language": "EN",
+      "channel": "agent chat",
+      "answers": {
+        "C1": "yes",
+        "C2": "na",
+        "C3": "na",
+        "C4": 10,
+        "C5": "yes",
+        "C6": 4,
+        "C7": "no",
+        "C8": "no"
+      },
+      "notes": {
+        "C4": "когда повторять вывод — не ответил",
+        "C6": "вопрос проигнорирован"
+      },
+      "labeled_by": "claude-draft"
+    },
+    "p1-en-008": {
+      "split": "test",
+      "status": "draft",
+      "language": "EN",
+      "channel": "agent chat",
+      "answers": {
+        "C1": "yes",
+        "C2": "na",
+        "C3": "na",
+        "C4": 20,
+        "C5": "yes",
+        "C6": 10,
+        "C7": "no",
+        "C8": "no"
+      },
+      "notes": {},
+      "labeled_by": "claude-draft"
+    },
+    "p1-en-009": {
+      "split": "tune",
+      "status": "draft",
+      "language": "EN",
+      "channel": "agent chat",
+      "answers": {
+        "C1": "yes",
+        "C2": "na",
+        "C3": "na",
+        "C4": 20,
+        "C5": "yes",
+        "C6": 10,
+        "C7": "na",
+        "C8": "no"
+      },
+      "notes": {
+        "C7": "связь прервалась"
+      },
+      "labeled_by": "claude-draft"
+    },
+    "p1-en-010": {
+      "split": "tune",
+      "status": "draft",
+      "language": "EN",
+      "channel": "agent chat",
+      "answers": {
+        "C1": "yes",
+        "C2": "na",
+        "C3": "na",
+        "C4": 15,
+        "C5": "yes",
+        "C6": 10,
+        "C7": "no",
+        "C8": "no"
+      },
+      "notes": {
+        "C4": "не сказал, как перевести с D-счёта"
+      },
+      "labeled_by": "claude-draft"
+    },
+    "p1-en-011": {
+      "split": "tune",
+      "status": "draft",
+      "language": "EN",
+      "channel": "agent chat",
+      "answers": {
+        "C1": "yes",
+        "C2": "na",
+        "C3": "na",
+        "C4": 20,
+        "C5": "yes",
+        "C6": 10,
+        "C7": "no",
+        "C8": "no"
+      },
+      "notes": {},
+      "labeled_by": "claude-draft"
+    },
+    "p1-en-012": {
+      "split": "tune",
+      "status": "draft",
+      "language": "EN",
+      "channel": "agent chat",
+      "answers": {
+        "C1": "yes",
+        "C2": "na",
+        "C3": "na",
+        "C4": 20,
+        "C5": "yes",
+        "C6": 10,
+        "C7": "no",
+        "C8": "no"
+      },
+      "notes": {},
+      "labeled_by": "claude-draft"
+    },
+    "p1-en-013": {
+      "split": "test",
+      "status": "draft",
+      "language": "EN",
+      "channel": "agent chat",
+      "answers": {
+        "C1": "yes",
+        "C2": "na",
+        "C3": "na",
+        "C4": 20,
+        "C5": "yes",
+        "C6": 10,
+        "C7": "no",
+        "C8": "yes"
+      },
+      "notes": {},
+      "labeled_by": "claude-draft",
+      "flag_subtypes": {
+        "C8": [
+          "bypass_service"
+        ]
+      }
+    },
+    "p1-en-014": {
+      "split": "test",
+      "status": "draft",
+      "language": "EN",
+      "channel": "agent chat",
+      "answers": {
+        "C1": "yes",
+        "C2": "na",
+        "C3": "no",
+        "C4": 5,
+        "C5": "no",
+        "C6": 4,
+        "C7": "no",
+        "C8": "no"
+      },
+      "notes": {
+        "C3": "раскрыл ограничение без идентификации",
+        "C8": "спорно (T8)"
+      },
+      "labeled_by": "claude-draft"
+    },
+    "p1-en-015": {
+      "split": "tune",
+      "status": "draft",
+      "language": "EN",
+      "channel": "agent chat",
+      "answers": {
+        "C1": "no",
+        "C2": "no",
+        "C3": "na",
+        "C4": 20,
+        "C5": "yes",
+        "C6": 4,
+        "C7": "no",
+        "C8": "no"
+      },
+      "notes": {
+        "C1": "нет приветствия и представления",
+        "C2": "не уточнил, ответил наугад"
+      },
+      "labeled_by": "claude-draft"
+    },
+    "p4-ru-003": {
+      "split": "tune",
+      "status": "draft",
+      "language": "RU",
+      "channel": "voice call",
+      "answers": {
+        "C1": "yes",
+        "C2": "yes",
+        "C3": "yes",
+        "C4": 20,
+        "C5": "yes",
+        "C6": 7,
+        "C7": "na",
+        "C8": "no"
+      },
+      "notes": {
+        "C3": "«вижу ваш брокерский счёт» [48] до SMS-кода — спорно",
+        "C6": "оператор сначала не понял вопрос [26]",
+        "C7": "клиент сам завершил звонок после «спасибо»"
+      },
+      "labeled_by": "claude-draft"
+    },
+    "p4-ru-002": {
+      "split": "tune",
+      "status": "draft",
+      "language": "RU",
+      "channel": "voice call",
+      "answers": {
+        "C1": "no",
+        "C2": "na",
+        "C3": "yes",
+        "C4": 15,
+        "C5": "yes",
+        "C6": 10,
+        "C7": "no",
+        "C8": "no"
+      },
+      "notes": {
+        "C1": "нет приветствия (обратный звонок, «Да, компания…, меня зовут…»)",
+        "C4": "не передал клиенту комиссию, которую назвал трейдер",
+        "C7": "спорно — итог был в [63–66], в конце только прощание"
+      },
+      "labeled_by": "claude-draft"
+    },
+    "p4-ru-001": {
+      "split": "test",
+      "status": "draft",
+      "language": "RU",
+      "channel": "voice call",
+      "answers": {
+        "C1": "yes",
+        "C2": "na",
+        "C3": "na",
+        "C4": 10,
+        "C5": "no",
+        "C6": 7,
+        "C7": "na",
+        "C8": "no"
+      },
+      "notes": {
+        "C4": "объяснил рамки поддержки, но не дал пути, как получить помощь с выбором бумаг",
+        "C5": "клиент дважды выразил недовольство, ответы сухие — интонация по записи",
+        "C7": "клиент завершил звонок"
+      },
+      "labeled_by": "claude-draft"
+    },
+    "p4-ru-005": {
+      "split": "test",
+      "status": "draft",
+      "language": "RU",
+      "channel": "voice call",
+      "answers": {
+        "C1": "yes",
+        "C2": "yes",
+        "C3": "na",
+        "C4": 15,
+        "C5": "yes",
+        "C6": 7,
+        "C7": "yes",
+        "C8": "no"
+      },
+      "notes": {
+        "C1": "спорно — имя не слышно в транскрипте («Компания fernetbark и операции»)",
+        "C3": "спорно na — удаление незавершённой регистрации",
+        "C4": "срок «обычно через 2 часа» расплывчатый"
+      },
+      "labeled_by": "claude-draft"
+    },
+    "p4-ru-004": {
+      "split": "tune",
+      "status": "todo",
+      "language": "RU",
+      "channel": "voice call",
+      "answers": {},
+      "notes": {},
+      "labeled_by": null
+    }
+  }
+}
