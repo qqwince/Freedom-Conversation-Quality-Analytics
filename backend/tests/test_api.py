@@ -33,6 +33,13 @@ class ScriptedProvider:
     def generate_json(self, system: str, turns: list[ChatTurn], schema: type) -> LLMResult:
         self.calls += 1
         self.last_prompt = turns[0].text
+        if schema.__name__ == "CoachAnswer":                         # чат-наставник
+            self.coach_system, self.coach_turns = system, list(turns)
+            return LLMResult(json.dumps({"answer": "Подводите итог в конце диалога."}), self.model, 80, 20, 0.01)
+        if "Оцени оператора по критериям:" not in turns[0].text:      # сводка оператору
+            count = turns[0].text.count(" — смысл совета:")
+            return LLMResult(json.dumps({"greeting": "Добрый день, Соня!", "items": ["А) Совет."] * count}),
+                             self.model, 50, 20, 0.01)
         wanted = turns[0].text.rsplit("Оцени оператора по критериям:", 1)[1].strip(" .\n").split(", ")
         results = [{"criterion_id": c, "checks": [], "answer": self.answers[c],
                     "evidence": [{"msg_idx": 5, "proves": "…"}], "explanation": f"{c} — ok"} for c in wanted]
@@ -116,6 +123,78 @@ def test_ai_second_opinion_is_a_hint_not_a_decision(setup):
     assert stored["status"] == "open"                      # решение по-прежнему за человеком
     assert stored["ai_opinion"]["answer"] == 10
     assert client.get(f"/api/evaluations/{ev['id']}/final").json()["final"]["total"] == 90.5
+
+
+def test_access_control_by_role_and_department(setup):
+    client, _, checklist = setup
+    ev = evaluate(client)                                   # без заголовка — администратор
+    as_user = lambda uid: {"X-CQA-User": uid}             # noqa: E731
+
+    # Руководитель линии RU видит диалог (оператор Соня, RU), руководитель KZ+EN — нет
+    visible = client.get("/api/conversations", headers=as_user("mgr-ru")).json()
+    assert [c["conversation_id"] for c in visible] == ["t-001"]
+    assert client.get("/api/conversations", headers=as_user("mgr-kzen")).json() == []
+    assert client.get("/api/conversations/t-001", headers=as_user("mgr-kzen")).status_code == 404
+    assert client.get(f"/api/evaluations/{ev['id']}", headers=as_user("mgr-kzen")).status_code == 404
+    # Оператор Алина не видит чужой диалог
+    assert client.get("/api/conversations", headers=as_user("op-alina")).json() == []
+
+    listed = client.get("/api/conversations", headers=as_user("mgr-ru")).json()[0]
+    assert listed["operator"] == "Соня" and listed["department_title"] == "Линия RU"
+
+    # Апелляцию подаёт руководитель, решает только проверяющий
+    appeal = client.post(f"/api/evaluations/{ev['id']}/appeals", headers=as_user("mgr-ru"),
+                         json={"criterion_id": "C6", "comment": "Предупредил об ожидании"}).json()
+    decision = {"action": "confirm", "reason": "верно"}
+    assert client.post(f"/api/appeals/{appeal['id']}/decision", headers=as_user("mgr-ru"),
+                       json=decision).status_code == 403
+    assert client.post(f"/api/appeals/{appeal['id']}/decision", headers=as_user("reviewer"),
+                       json=decision).json()["status"] == "confirmed"
+
+    # Чек-лист меняет только администратор
+    assert client.put("/api/checklists/chat-default", headers=as_user("mgr-ru"), json=checklist).status_code == 403
+    assert client.get("/api/me", headers=as_user("nobody")).status_code == 401
+    me = client.get("/api/me", headers=as_user("reviewer")).json()
+    assert me["user"]["role"] == "reviewer" and "review_appeals" in me["user"]["permissions"]
+
+
+def test_operator_feedback_is_generated_once_a_day(setup):
+    client, provider, _ = setup
+    evaluate(client)
+    first = client.get("/api/operators/Соня/feedback").json()
+    calls = provider.calls
+    second = client.get("/api/operators/Соня/feedback").json()
+    assert provider.calls == calls                       # повторное открытие модель не вызывает
+    assert first["cached"] is False and second["cached"] is True
+    assert second["message"] == first["message"]
+    lines = first["message"].splitlines()
+    assert lines[0] == "Добрый день, Соня!" and lines[1] == "Что стоит улучшить?"
+    assert lines[2].startswith("А) Совет — +")         # «А)» от модели не дублируется
+    client.get("/api/operators/Соня/feedback?refresh=true")
+    assert provider.calls == calls + 1                   # руководитель может пересчитать
+
+
+def test_coach_answers_from_operator_evaluations_with_daily_limit(setup, monkeypatch):
+    from cqa import coach
+
+    client, provider, _ = setup
+    evaluate(client)                                         # C4 = 15 из 20, C6 = 7 из 10 — недобор
+    monkeypatch.setattr(coach, "limiter", coach._Limiter())
+    monkeypatch.setattr(coach, "DAILY_LIMIT", 2)
+
+    body = {"question": "Почему мне сняли баллы?", "operator": "Соня",
+            "history": [{"role": "user", "text": "Привет"}, {"role": "assistant", "text": "Здравствуйте!"}]}
+    res = client.post("/api/coach", json=body).json()
+    assert res["answer"] == "Подводите итог в конце диалога." and res["remaining_today"] == 1
+    context = provider.coach_system
+    assert "Оператор: Соня" in context and "Критерий «Корректная и полная консультация»" in context
+    assert "диалог t-001" in context                          # обоснование его же оценки
+    assert provider.coach_turns[-1].text == "Почему мне сняли баллы?"
+    assert [t.role for t in provider.coach_turns] == ["user", "model", "user"]   # история и вопрос
+
+    client.post("/api/coach", json=body)
+    assert client.post("/api/coach", json=body).status_code == 429         # лимит на день
+    assert client.post("/api/coach", headers={"X-CQA-User": "reviewer"}, json=body).status_code == 403
 
 
 def test_decision_validation(setup):

@@ -76,6 +76,31 @@ export function plural(n, one, few, many) {
   return many;
 }
 
+/** Страница списка: { items, page, pages, from, to, total }. page — с 0, выход за границы исправляется. */
+export function paginate(items, page, size) {
+  const pages = Math.max(1, Math.ceil(items.length / size));
+  const current = Math.min(Math.max(0, page), pages - 1);
+  const start = current * size;
+  return { items: items.slice(start, start + size), page: current, pages, from: start + 1,
+    to: Math.min(start + size, items.length), total: items.length };
+}
+
+/** Переключатель страниц; кнопки несут data-page — обработчик ставит экран. Одна страница — пусто. */
+export function pagerHtml(p, scope = "") {
+  if (p.pages <= 1) return "";
+  const btn = (page, label, disabled, current = false) =>
+    `<button class="cqa-btn cqa-btn--sm ${current ? "cqa-btn--primary" : "cqa-btn--ghost"}" data-page="${page}" data-pager="${esc(scope)}" ${disabled ? "disabled" : ""}>${label}</button>`;
+  const numbers = [];
+  for (let i = 0; i < p.pages; i++) {
+    if (i === 0 || i === p.pages - 1 || Math.abs(i - p.page) <= 1) numbers.push(btn(i, i + 1, false, i === p.page));
+    else if (numbers.at(-1) !== "…") numbers.push("…");
+  }
+  return `<div class="row cqa-pager" style="justify-content:space-between;flex-wrap:wrap;margin-top:12px">
+    <span class="small faint">${p.from}–${p.to} из ${p.total}</span>
+    <div class="row" style="gap:4px">${btn(p.page - 1, "← Назад", p.page === 0)}${numbers.map((n) => n === "…" ? '<span class="faint">…</span>' : n).join("")}${btn(p.page + 1, "Вперёд →", p.page === p.pages - 1)}</div>
+  </div>`;
+}
+
 export function debounce(fn, ms = 200) {
   let timer;
   return (...args) => {

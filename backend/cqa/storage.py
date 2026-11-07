@@ -59,6 +59,26 @@ CREATE TABLE IF NOT EXISTS appeals (
     ai_opinion    TEXT                 -- JSON: второе мнение модели для проверяющего
 );
 CREATE INDEX IF NOT EXISTS appeals_evaluation ON appeals(evaluation_id);
+
+CREATE TABLE IF NOT EXISTS settings (
+    key   TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS sync_events (
+    id       INTEGER PRIMARY KEY AUTOINCREMENT,
+    at       TEXT NOT NULL,
+    group_id TEXT NOT NULL,
+    data     TEXT NOT NULL              -- JSON: new_ids, job_id, error
+);
+
+CREATE TABLE IF NOT EXISTS operator_feedback (
+    operator   TEXT NOT NULL,
+    day        TEXT NOT NULL,          -- YYYY-MM-DD: одна сводка на оператора в день
+    data       TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    PRIMARY KEY (operator, day)
+);
 CREATE INDEX IF NOT EXISTS appeals_status ON appeals(status);
 """
 
@@ -254,6 +274,43 @@ class Storage:
         if not updated:
             raise NotFound(f"открытая апелляция {appeal_id} не найдена")
         return self.get_appeal(appeal_id)
+
+
+    # --- Настройки и журнал автообновления ---------------------------------------------------
+
+    def get_setting(self, key: str) -> Any:
+        with self._connect() as db:
+            row = db.execute("SELECT value FROM settings WHERE key = ?", (key,)).fetchone()
+        return json.loads(row["value"]) if row else None
+
+    def set_setting(self, key: str, value: Any) -> None:
+        with self._connect() as db:
+            db.execute("INSERT INTO settings VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+                       (key, json.dumps(value, ensure_ascii=False)))
+
+    def add_sync_event(self, event: dict[str, Any]) -> None:
+        with self._connect() as db:
+            db.execute("INSERT INTO sync_events (at, group_id, data) VALUES (?, ?, ?)",
+                       (now(), event["group_id"], json.dumps(event, ensure_ascii=False)))
+
+    def list_sync_events(self, limit: int = 20) -> list[dict[str, Any]]:
+        with self._connect() as db:
+            rows = db.execute("SELECT at, data FROM sync_events ORDER BY id DESC LIMIT ?", (limit,)).fetchall()
+        return [{**json.loads(r["data"]), "at": r["at"]} for r in rows]
+
+    # --- Сводки операторам -----------------------------------------------------------------
+
+    def get_feedback(self, operator: str, day: str) -> dict[str, Any] | None:
+        with self._connect() as db:
+            row = db.execute("SELECT data FROM operator_feedback WHERE operator = ? AND day = ?",
+                             (operator, day)).fetchone()
+        return json.loads(row["data"]) if row else None
+
+    def save_feedback(self, operator: str, day: str, feedback: dict[str, Any]) -> None:
+        with self._connect() as db:
+            db.execute("INSERT INTO operator_feedback VALUES (?, ?, ?, ?) ON CONFLICT(operator, day) "
+                       "DO UPDATE SET data = excluded.data, created_at = excluded.created_at",
+                       (operator, day, json.dumps(feedback, ensure_ascii=False), now()))
 
 
 def _appeal_row(row: sqlite3.Row) -> dict[str, Any]:

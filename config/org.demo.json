@@ -1,0 +1,87 @@
+{
+  "demo": true,
+  "departments": [
+    {
+      "id": "ru",
+      "title": "Линия RU",
+      "languages": [
+        "RU"
+      ]
+    },
+    {
+      "id": "kz",
+      "title": "Линия KZ",
+      "languages": [
+        "KZ"
+      ]
+    },
+    {
+      "id": "en",
+      "title": "Линия EN",
+      "languages": [
+        "EN"
+      ]
+    }
+  ],
+  "users": [
+    {
+      "id": "admin",
+      "name": "Администратор системы",
+      "role": "admin",
+      "departments": "*"
+    },
+    {
+      "id": "mgr-ru",
+      "name": "Руководитель · линия RU",
+      "role": "manager",
+      "departments": [
+        "ru"
+      ]
+    },
+    {
+      "id": "mgr-kzen",
+      "name": "Руководитель · линии KZ и EN",
+      "role": "manager",
+      "departments": [
+        "kz",
+        "en"
+      ]
+    },
+    {
+      "id": "reviewer",
+      "name": "Проверяющий · контроль качества",
+      "role": "reviewer",
+      "departments": "*"
+    },
+    {
+      "id": "op-alina",
+      "name": "Оператор · Алина (линия RU)",
+      "role": "operator",
+      "operator": "Алина",
+      "departments": [
+        "ru"
+      ]
+    },
+    {
+      "id": "op-aruzhan",
+      "name": "Оператор · Аружан (линия KZ)",
+      "role": "operator",
+      "operator": "Аружан",
+      "departments": [
+        "kz"
+      ]
+    }
+  ],
+  "kpi": {
+    "quality_targets": {
+      "avg_score": 85,
+      "critical_errors": 0,
+      "criterion_compliance": 90
+    },
+    "workload": {
+      "contacts_per_shift_target": 60,
+      "aht_target_sec": 360,
+      "csat_target": 4.6
+    }
+  }
+}

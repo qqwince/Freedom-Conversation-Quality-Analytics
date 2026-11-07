@@ -171,8 +171,10 @@ class CQAService:
         if not self._api_url:
             raise ServiceError("не задана ссылка API организаторов (CQA_API_URL)")
         group, conversations, warnings = normalize(fetch_raw(self._api_url, group_id))
+        known = {c.conversation_id for c in self.storage.list_conversations()}
         self.storage.upsert_conversations(conversations)
-        return {"dataset": group, "imported": len(conversations), "warnings": warnings}
+        new_ids = [c.conversation_id for c in conversations if c.conversation_id not in known]
+        return {"dataset": group, "imported": len(conversations), "new_ids": new_ids, "warnings": warnings}
 
     def import_payload(self, payload: Any, dataset: str = "MANUAL") -> dict[str, Any]:
         """Ручная загрузка: ответ API целиком, одна запись или список записей."""

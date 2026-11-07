@@ -1,20 +1,25 @@
 // Экран проверяющего: спорная оценка, комментарий, фрагмент диалога, решение с причиной.
 
 import { api } from "../api.js";
-import { $, esc, formatDate, freshRoot, num, on, turn } from "../dom.js";
+import { $, esc, formatDate, freshRoot, num, on, pagerHtml, paginate, turn } from "../dom.js";
 import { icon } from "../icons.js";
 import { SPEAKER, allowedAnswers, evidenceOf, pill } from "../labels.js";
+import { can } from "../session.js";
 import { toast } from "../ui.js";
 
-const state = { tab: "open" };
+const state = { tab: "open", page: 0 };
+const PAGE_SIZE = 5;   // карточки апелляций крупные — по пять на страницу
 const CONTEXT = 1;   // сколько соседних реплик показывать вокруг доказательства
 
 export async function renderAppeals(container) {
   const appeals = await api.appeals(state.tab === "open" ? "open" : undefined);
   const list = state.tab === "open" ? appeals : appeals.filter((a) => a.status !== "open");
   const el = freshRoot(container);
+  const page = paginate(list, state.page, PAGE_SIZE);
+  state.page = page.page;
 
-  const enriched = await Promise.all(list.map(async (a) => ({
+  // Диалоги и чек-листы подгружаются только для текущей страницы.
+  const enriched = await Promise.all(page.items.map(async (a) => ({
     appeal: a,
     checklist: await api.checklist(a.checklist_id, a.checklist_version),
     conversation: await api.conversation(a.conversation_id),
@@ -22,16 +27,20 @@ export async function renderAppeals(container) {
 
   el.innerHTML = `
     <div class="cqa-page-head">
-      <div class="grow"><h1>Апелляции</h1>
-        <div class="small faint">Проверяющий изучает доказательства и подтверждает или меняет оценку</div></div>
+      <div class="grow"><h1>Апелляции</h1></div>
       <div class="cqa-segment">
         <button data-tab="open" class="${state.tab === "open" ? "is-active" : ""}">На рассмотрении</button>
         <button data-tab="decided" class="${state.tab === "decided" ? "is-active" : ""}">Рассмотренные</button>
       </div>
     </div>
-    ${enriched.length ? `<div class="stack" style="gap:16px">${enriched.map(appealCard).join("")}</div>` : emptyState()}`;
+    ${enriched.length ? `<div class="stack" style="gap:16px">${enriched.map(appealCard).join("")}</div>${pagerHtml(page, "appeals")}` : emptyState()}`;
 
-  on(el, "click", "[data-tab]", (e, btn) => { state.tab = btn.dataset.tab; renderAppeals(container); });
+  on(el, "click", "[data-tab]", (e, btn) => { Object.assign(state, { tab: btn.dataset.tab, page: 0 }); renderAppeals(container); });
+  on(el, "click", "[data-pager=appeals]", async (e, btn) => {
+    state.page = Number(btn.dataset.page);
+    await renderAppeals(container);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
   on(el, "change", "select[name=new_answer]", (e, sel) => {
     $("[data-role=new-answer]", sel.closest("form")).hidden = sel.value === "";
   });
@@ -94,8 +103,10 @@ function appealCard({ appeal, checklist, conversation }) {
           <p class="muted">${esc(result?.explanation ?? "—")}</p>
         </div>
         ${fragment(conversation, result)}
-        ${aiOpinionBlock(appeal, criterion)}
-        ${appeal.status === "open" ? decisionForm(appeal, criterion) : decisionSummary(appeal, criterion)}
+        ${can("review_appeals") ? aiOpinionBlock(appeal, criterion) : ""}
+        ${appeal.status !== "open" ? decisionSummary(appeal, criterion)
+          : can("review_appeals") ? decisionForm(appeal, criterion)
+          : `<p class="small cqa-part">${icon("history")} Ожидает решения проверяющего</p>`}
       </div>
     </article>`;
 }
@@ -105,8 +116,7 @@ function aiOpinionBlock(appeal, criterion) {
   const op = appeal.ai_opinion;
   if (!op) {
     return appeal.status === "open"
-      ? `<div><button class="cqa-btn cqa-btn--sm" data-action="ai" data-id="${esc(appeal.id)}">${icon("refresh")} Второе мнение ИИ</button>
-          <span class="xs faint" style="margin-left:8px">модель заново проверит критерий с учётом комментария · ≈ 30 с</span></div>`
+      ? `<div><button class="cqa-btn cqa-btn--sm" data-action="ai" data-id="${esc(appeal.id)}" title="Модель заново проверит критерий с учётом комментария (≈ 30 с)">${icon("refresh")} Второе мнение ИИ</button></div>`
       : "";
   }
   const turns = (op.evidence ?? []).map((e) => turn(e.msg_idx));

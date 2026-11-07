@@ -5,6 +5,7 @@ import { api } from "../api.js";
 import { $, $$, esc, formatDate, formatOffset, freshRoot, num, on, plural, total, turn } from "../dom.js";
 import { icon } from "../icons.js";
 import { CHANNEL, SPEAKER, evidenceOf, pill, reviewNotes, sectionTone, totalTone } from "../labels.js";
+import { can } from "../session.js";
 import { toast } from "../ui.js";
 import { startEvaluation } from "./conversations.js";
 
@@ -48,15 +49,17 @@ async function draw(ctx) {
       <div class="cqa-card cqa-empty" style="margin:16px 0">
         <h3>Диалог ещё не оценён</h3>
         <p style="margin-bottom:16px">Модель проверит работу оператора по выбранному чек-листу.</p>
-        <button class="cqa-btn cqa-btn--primary" data-action="evaluate">${icon("play")} Оценить</button>
+        ${can("evaluate") ? `<button class="cqa-btn cqa-btn--primary" data-action="evaluate">${icon("play")} Оценить</button>` : ""}
       </div>` + dialogSection(conv, true);
     return;
   }
   const evaluation = await api.evaluation(ctx.evaluationId);
-  const [checklist, final] = await Promise.all([
+  const [checklist, final, checklists] = await Promise.all([
     api.checklist(evaluation.checklist_id, evaluation.checklist_version),
     api.finalResult(ctx.evaluationId),
+    api.checklists(),
   ]);
+  const latestVersion = checklists.find((c) => c.id === evaluation.checklist_id)?.latest_version;
   Object.assign(ctx, { evaluation, checklist, final });
   const hasDecisions = final.appeals.some((a) => a.status !== "open");
   if (!hasDecisions) ctx.mode = "original";
@@ -67,6 +70,11 @@ async function draw(ctx) {
     ${header(conv, evaluation, conv.evaluations, ctx.evaluationId)}
     ${summary(view, final, hasDecisions, ctx.mode)}
     ${criticalBanner(view.critical)}
+    ${latestVersion && latestVersion > evaluation.checklist_version ? `
+      <div class="cqa-banner" style="margin-top:16px">${icon("history")}
+        <div class="grow">Оценено по чек-листу v${evaluation.checklist_version}. Текущая версия — v${latestVersion}: новые и изменённые критерии появятся в этом диалоге после переоценки.</div>
+        ${can("evaluate") ? `<button class="cqa-btn cqa-btn--sm" data-action="evaluate">${icon("refresh")} Переоценить</button>` : ""}
+      </div>` : ""}
     <div class="cqa-list" style="margin-top:20px">
       ${checklist.criteria
         .slice().sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
@@ -80,7 +88,8 @@ async function draw(ctx) {
 // --- Заголовок и итог -------------------------------------------------------------------
 
 function header(conv, evaluation, history, currentId) {
-  const meta = [CHANNEL[conv.channel] ?? conv.channel, conv.language];
+  const meta = [conv.department_title, CHANNEL[conv.channel] ?? conv.channel].filter(Boolean);
+  if (conv.operator && conv.operator !== "—") meta.unshift(`оператор ${conv.operator}`);
   if (evaluation) meta.push(`чек-лист v${evaluation.checklist_version}`);
   const historySelect = history.length > 1 ? `
     <select class="cqa-select" style="width:auto" data-role="history" aria-label="История оценок">
@@ -95,7 +104,7 @@ function header(conv, evaluation, history, currentId) {
         <div class="small faint">${meta.map(esc).join(" · ")}</div>
       </div>
       ${historySelect}
-      ${evaluation ? `<button class="cqa-btn" data-action="evaluate">${icon("refresh")} Переоценить</button>` : ""}
+      ${evaluation && can("evaluate") ? `<button class="cqa-btn" data-action="evaluate">${icon("refresh")} Переоценить</button>` : ""}
     </div>`;
 }
 
@@ -214,7 +223,7 @@ function criterionDetails(criterion, r, appeals, ctx) {
       <span class="grow xs faint">${esc(weightNote)}${r.carried_from ? " · ответ из предыдущей оценки" : ""}</span>
       ${openAppeal
         ? `<span class="small cqa-part">Апелляция на рассмотрении</span>`
-        : `<button class="cqa-btn cqa-btn--sm" data-action="appeal" data-cid="${esc(criterion.id)}">${icon("flag")} Оспорить</button>`}
+        : can("appeal") ? `<button class="cqa-btn cqa-btn--sm" data-action="appeal" data-cid="${esc(criterion.id)}">${icon("flag")} Оспорить</button>` : ""}
     </div>
     <form data-appeal="${esc(criterion.id)}" class="stack" hidden>
       <textarea class="cqa-textarea" name="comment" rows="3" placeholder="Почему оценка неверна: например, оператор предупредил об ожидании в реплике 7"></textarea>

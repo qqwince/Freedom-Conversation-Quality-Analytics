@@ -47,6 +47,8 @@ export function modal({ title, body, submitLabel = "Готово", onSubmit }) {
     document.addEventListener("keydown", onKey);
     backdrop.addEventListener("mousedown", (event) => event.target === backdrop && close(null));
     backdrop.querySelector("[data-role=cancel]").addEventListener("click", () => close(null));
+    // ссылки внутри окна (например, на карточку диалога) закрывают окно
+    backdrop.addEventListener("click", (event) => { if (event.target.closest("[data-close-modal]")) close(null); });
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
       const button = form.querySelector("[type=submit]");

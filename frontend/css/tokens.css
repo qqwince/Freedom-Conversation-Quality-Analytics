@@ -30,12 +30,13 @@
   /* Типографика */
   --cqa-font: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
   --cqa-font-mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
-  --cqa-fs-xs: 12px;     /* подписи, метаданные */
-  --cqa-fs-sm: 13px;     /* вторичный текст */
-  --cqa-fs-md: 15px;     /* основной текст */
-  --cqa-fs-lg: 17px;     /* значения в плитках */
-  --cqa-fs-xl: 20px;     /* заголовок экрана */
-  --cqa-fs-hero: 52px;   /* итоговый балл */
+  --cqa-fs-xs: 13px;     /* подписи, метаданные */
+  --cqa-fs-sm: 14px;     /* вторичный текст */
+  --cqa-fs-ui: 15px;     /* кнопки, поля, пункты меню */
+  --cqa-fs-md: 16px;     /* основной текст */
+  --cqa-fs-lg: 19px;     /* значения в плитках */
+  --cqa-fs-xl: 24px;     /* заголовок экрана */
+  --cqa-fs-hero: 58px;   /* итоговый балл */
   --cqa-fw-regular: 400;
   --cqa-fw-medium: 500;
   --cqa-fw-bold: 600;
@@ -48,4 +49,50 @@
   --cqa-pad-x: 24px;
   --cqa-content-width: 1080px;
   --cqa-transition: 160ms ease;
+}
+
+/* Светлая тема: те же смыслы цветов, корпоративная светлая палитра. */
+.cqa-app[data-theme="light"] {
+  --cqa-bg: #f4f6f5;
+  --cqa-surface-1: #ffffff;
+  --cqa-surface-2: #eef2f0;
+  --cqa-surface-3: #e3e9e6;
+  --cqa-line: #dce3df;
+  --cqa-line-strong: #c3ccc7;
+  --cqa-text: #0f1512;
+  --cqa-text-2: #4a5650;
+  --cqa-text-3: #6f7b75;
+  --cqa-green: #17744a;
+  --cqa-green-hover: #11603c;
+  --cqa-green-bg: #e2f3e9;
+  --cqa-green-fg: #0f6a3f;
+  --cqa-red-bg: #fbe8e6;
+  --cqa-red-fg: #b2362b;
+  --cqa-amber-bg: #fbf0d9;
+  --cqa-amber-fg: #865700;
+  --cqa-range-bg: #fff5dc;
+  --cqa-range-line: #e2c172;
+}
+
+/* Высокий контраст: для слабого зрения и ярких переговорных. */
+.cqa-app[data-theme="contrast"] {
+  --cqa-bg: #000000;
+  --cqa-surface-1: #0b0b0b;
+  --cqa-surface-2: #151515;
+  --cqa-surface-3: #202020;
+  --cqa-line: #6e6e6e;
+  --cqa-line-strong: #a0a0a0;
+  --cqa-text: #ffffff;
+  --cqa-text-2: #e8e8e8;
+  --cqa-text-3: #c8c8c8;
+  --cqa-green: #00a35c;
+  --cqa-green-hover: #00bd6b;
+  --cqa-green-bg: #003d22;
+  --cqa-green-fg: #63ffa3;
+  --cqa-red-bg: #4d0000;
+  --cqa-red-fg: #ff8f85;
+  --cqa-amber-bg: #3d2a00;
+  --cqa-amber-fg: #ffd36b;
+  --cqa-range-bg: #332300;
+  --cqa-range-line: #ffd36b;
 }

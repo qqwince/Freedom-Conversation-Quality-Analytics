@@ -4,6 +4,7 @@
 import { api } from "../api.js";
 import { $, esc, freshRoot, num, on, plural } from "../dom.js";
 import { icon } from "../icons.js";
+import { can } from "../session.js";
 import { modal, toast, trackJob } from "../ui.js";
 
 const TYPE = { binary: "Да / Нет", scale: "Шкала", flag: "Флаг грубой ошибки" };
@@ -56,6 +57,16 @@ function draw(ctx) {
       ${draft.criteria.slice().sort((a, b) => (a.order ?? 0) - (b.order ?? 0)).map((c) => criterionRow(ctx, c)).join("")}
     </div>
     <div style="margin-top:12px"><button class="cqa-btn" data-action="add">${icon("plus")} Добавить критерий</button></div>`;
+  if (!can("edit_checklist")) makeReadOnly(ctx.el);
+}
+
+/** Просмотр без прав на изменение: поля недоступны, кнопок изменения нет. */
+function makeReadOnly(el) {
+  el.querySelectorAll("[data-form] input, [data-form] select, [data-form] textarea").forEach((f) => { f.disabled = true; });
+  el.querySelectorAll('[data-action="save"], [data-action="add"], [data-action="remove"], [data-action="add-step"], '
+    + '[data-action="remove-step"], [data-action="apply"]').forEach((b) => b.remove());
+  el.querySelector(".cqa-page-head")?.insertAdjacentHTML("afterend",
+    `<div class="cqa-banner" style="margin-bottom:16px">${icon("user")} Только просмотр: чек-лист меняет администратор системы.</div>`);
 }
 
 function criterionRow(ctx, c) {

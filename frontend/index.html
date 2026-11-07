@@ -11,6 +11,10 @@
   <link rel="stylesheet" href="css/tokens.css">
   <link rel="stylesheet" href="css/app.css">
   <style>html, body { margin: 0; background: #0b0d0c; }</style>
+  <script>
+    /* Тема до загрузки модулей — без вспышки тёмного фона на светлой теме. */
+    try { if (localStorage.getItem("cqa.theme") === "light") document.documentElement.style.background = "#f4f6f5"; } catch {}
+  </script>
 </head>
 <body>
   <!-- Корневой элемент компонента. data-api-base — адрес сервера оценки (пусто — тот же хост). -->
