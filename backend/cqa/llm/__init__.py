@@ -32,12 +32,12 @@ def create_provider(model: str | None = None) -> LLMProvider:
         from cqa.llm.openai_compat import OpenAICompatibleProvider
 
         if not settings.deepseek_api_key:
-            raise LLMError("DEEPSEEK_API_KEY не задан (файл .env в корне проекта)")
+            raise LLMError("DEEPSEEK_API_KEY не задан: впишите ключ в файл .env в корне проекта и перезапустите сервер")
         return OpenAICompatibleProvider(name="deepseek", base_url=settings.deepseek_base_url,
                                         api_key=settings.deepseek_api_key, **common)
 
     from cqa.llm.gemini import GeminiProvider
 
     if not settings.gemini_api_key:
-        raise LLMError("GEMINI_API_KEY не задан (файл .env в корне проекта)")
+        raise LLMError("GEMINI_API_KEY не задан: впишите ключ в файл .env в корне проекта и перезапустите сервер")
     return GeminiProvider(api_key=settings.gemini_api_key, **common)

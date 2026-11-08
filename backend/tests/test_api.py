@@ -339,3 +339,17 @@ def test_dashboard_calibration_counts_reviewer_changes(setup):
                                  "reason": "Предупредил об ожидании"}
     # руководитель другой линии апелляций по чужим диалогам не видит
     assert client.get("/api/dashboard", headers={"X-CQA-User": "mgr-kzen"}).json()["calibration"]["total"] == 0
+
+
+def test_first_run_restores_demo_snapshot(tmp_path, monkeypatch):
+    from cqa import api
+
+    snapshot = tmp_path / "demo.sqlite3"
+    snapshot.write_bytes(b"snapshot")
+    monkeypatch.setattr(api, "DEMO_DB", snapshot)
+    database = tmp_path / "data" / "cqa.sqlite3"
+    api._restore_demo(database)
+    assert database.read_bytes() == b"snapshot"                  # первый запуск — копия снимка
+    database.write_bytes(b"own data")
+    api._restore_demo(database)
+    assert database.read_bytes() == b"own data"                  # своя база не перезаписывается

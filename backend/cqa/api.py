@@ -11,9 +11,11 @@ import json
 import logging
 import os
 import re
+import shutil
 import threading
 import time
 from datetime import date
+from pathlib import Path
 from typing import Annotated, Any
 
 import httpx
@@ -125,8 +127,10 @@ def create_app(service: CQAService | None = None, start_sync: bool | None = None
     settings = get_settings()
     start_sync = service is None if start_sync is None else start_sync
     if service is None:
+        database = settings.data_dir / "cqa.sqlite3"
+        _restore_demo(database)
         service = CQAService(
-            storage=Storage(settings.data_dir / "cqa.sqlite3"),
+            storage=Storage(database),
             provider_factory=create_provider,
             api_url=os.environ.get("CQA_API_URL"),
             workers=settings.workers,
@@ -575,6 +579,19 @@ def _extract_audio_src(player_url: str) -> str:
     if not match:
         raise ServiceError("на странице записи не найден аудиофайл")
     return html.unescape(match.group(1))
+
+
+DEMO_DB = PROJECT_ROOT / "demo" / "cqa-demo.sqlite3"
+
+
+def _restore_demo(database: Path) -> None:
+    """Первый запуск после клонирования: своей базы ещё нет — берём снимок с оценённым DEV-набором,
+    чтобы интерфейс сразу показывал диалоги, оценки и апелляции без ключей модели и доступа к API."""
+    if database.exists() or not DEMO_DB.exists():
+        return
+    database.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(DEMO_DB, database)
+    log.info("первый запуск: база создана из демо-снимка %s", DEMO_DB.name)
 
 
 def _seed(service: CQAService) -> None:

@@ -7,6 +7,41 @@
 Команда **NOMADS**. Модель — DeepSeek V4.1 Flash (`deepseek-flash`) через внешний API,
 запасная — `deepseek-v4-pro`; стоимость — в разделе [«Модель и стоимость»](#модель-и-стоимость).
 
+## Запуск за одну команду
+
+Нужен только **Python 3.11+** (https://www.python.org/downloads/) и интернет для установки пакетов.
+
+```bash
+git clone https://github.com/qqwince/Freedom-Conversation-Quality-Analytics.git
+```
+```bash
+cd Freedom-Conversation-Quality-Analytics
+```
+```bash
+python start.py
+```
+
+В Windows можно просто дважды щёлкнуть `start.bat`; на macOS и Linux, если `python` — это Python 2,
+запустите `python3 start.py`.
+
+Скрипт сам создаёт окружение `.venv`, ставит зависимости (первый раз около минуты), создаёт `.env`,
+запускает сервер и открывает браузер на http://localhost:8000/ (если порт занят — на следующем
+свободном). Остановить — Ctrl+C.
+
+**Что работает сразу, без ключей и доступа к API.** При первом запуске база создаётся из демо-снимка
+`demo/cqa-demo.sqlite3`: 65 диалогов DEV с оценками, обоснованиями и журналами модели, апелляции,
+дашборд, роли (переключатель пользователя в шапке), редактор чек-листа и пересчёт итога при смене
+веса — всё без модели.
+
+**Что требует ключа модели** — новые оценки, второе мнение ИИ, создание критерия с помощью ИИ,
+сводка и наставник оператора. Впишите в `.env` `DEEPSEEK_API_KEY` (platform.deepseek.com) или
+переключитесь на Gemini: `CQA_LLM_MODEL=gemini-3.5-flash` и `GEMINI_API_KEY` (бесплатный ключ на
+aistudio.google.com), затем перезапустите `python start.py`. Для загрузки наборов из API организаторов —
+`CQA_API_URL` (ссылка GET из задания).
+
+Начать с нуля: остановите сервер и удалите `data/cqa.sqlite3` — при следующем запуске база снова
+создастся из демо-снимка.
+
 ## Как устроена оценка
 
 ```
@@ -63,6 +98,8 @@ frontend/                       интерфейс: index.html, css/tokens.css, 
 backend/tests/                  тесты (pytest)
 scripts/fetch_dataset.py        загрузка набора из API организаторов
 scripts/evaluate.py             пакетная оценка из командной строки
+start.py, start.bat             запуск одной командой: окружение, зависимости, .env, сервер, браузер
+demo/cqa-demo.sqlite3           демо-снимок базы (DEV с оценками) для первого запуска; пересборка — scripts/make_demo_db.py
 scripts/control.py              час контроля одной командой: загрузка → оценка → results.json → push
 scripts/export_results.py       выгрузка results.json в формате организаторов
 frontend/tests/                 тесты интерфейса (node --test, без зависимостей)
@@ -70,9 +107,9 @@ frontend/tests/                 тесты интерфейса (node --test, б
 data/, eval/runs/               загруженные наборы и результаты прогонов (не коммитятся)
 ```
 
-## Быстрый старт
+## Ручная установка и командная строка
 
-Нужен Python 3.11+.
+То же, что делает `start.py`, по шагам (пути для Windows; на macOS и Linux — `.venv/bin/python`).
 
 ```bash
 python -m venv .venv
