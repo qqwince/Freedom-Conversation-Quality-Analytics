@@ -33,11 +33,9 @@ export function icon(name, extraClass = "") {
   return `<svg class="ic ${extraClass}" viewBox="0 0 24 24" aria-hidden="true">${PATHS[name] ?? ""}</svg>`;
 }
 
-// Логотип: облачко диалога с галочкой — «проверенный разговор».
-export const LOGO = `<svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true">
-  <rect width="30" height="30" rx="9" fill="var(--cqa-green)"/>
-  <path d="M8 10.5a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3v5.5a3 3 0 0 1-3 3h-4.2L11 22.2V19a3 3 0 0 1-3-3z"
-        fill="none" stroke="var(--cqa-text)" stroke-width="1.8" stroke-linejoin="round"/>
-  <path d="M12 13.4l2.1 2.1 4-4.2" fill="none" stroke="var(--cqa-green-fg)" stroke-width="2"
-        stroke-linecap="round" stroke-linejoin="round"/>
+// Логотип: стопка карточек — поток оценённых диалогов. Иконка gallery-vertical-end из Lucide
+// (https://lucide.dev, лицензия ISC © Lucide Contributors); цвет — зелёный акцент текущей темы.
+export const LOGO = `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--cqa-green-fg)"
+  stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+  <path d="M7 2h10"/><path d="M5 6h14"/><rect width="18" height="12" x="3" y="10" rx="2"/>
 </svg>`;
