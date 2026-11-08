@@ -53,6 +53,8 @@ export async function renderDashboard(container) {
       <div data-role="critical">${criticalList(d.critical)}</div>
     </section>
 
+    ${calibrationSection(d.calibration)}
+
     <section style="margin-top:20px">
       <h2 style="margin-bottom:10px">Линии</h2>
       <div class="cqa-list">
@@ -90,6 +92,55 @@ export async function renderDashboard(container) {
     sessionStorage.setItem("cqa.filter-department", row.dataset.department);
     location.hash = "#/conversations";
   });
+}
+
+// Калибровка по апелляциям: где проверяющие чаще всего меняют оценку ИИ — там и стоит уточнять правило.
+const VERDICT = {
+  revise: { tone: "bad", text: "уточнить правило" },
+  holds: { tone: "good", text: "модель подтверждается" },
+  few: { tone: "na", text: "мало решений" },
+};
+
+function calibrationSection(cal) {
+  const head = `<div class="row" style="margin-bottom:10px;flex-wrap:wrap">
+      <h2 class="grow">Где ИИ ошибается <span class="faint small" style="font-weight:400">· по решениям проверяющих</span></h2>
+      ${cal.total ? `<span class="small muted">${calibrationSummary(cal)}</span>` : ""}
+    </div>`;
+  if (!cal.total) {
+    const empty = "Апелляций пока нет. Когда проверяющие начнут принимать решения, здесь будет видно, "
+      + "в каких критериях оценку ИИ меняют чаще всего.";
+    return `<section style="margin-top:20px">${head}<div class="cqa-list cqa-empty"><p>${empty}</p></div></section>`;
+  }
+  return `<section style="margin-top:20px">${head}
+    <div class="cqa-list">${cal.criteria.map(calibrationRow).join("")}</div></section>`;
+}
+
+function calibrationSummary(cal) {
+  const parts = [`апелляций ${cal.total}`, `решено ${cal.decided}`, `оценка изменена ${cal.changed}`];
+  if (cal.ai_opinions) parts.push(`второе мнение ИИ совпало с решением ${cal.ai_agreed} из ${cal.ai_opinions}`);
+  return parts.join(" · ");
+}
+
+function calibrationRow(c) {
+  const verdict = VERDICT[c.verdict];
+  const share = c.changed_share ?? 0;
+  const shifts = c.shifts.map((s) => `${esc(s.shift)}${s.count > 1 ? ` ×${s.count}` : ""}`).join(", ");
+  const examples = c.examples.map((e) => `<button class="cqa-chip" data-open="${esc(e.conversation_id)}"
+      title="${esc(e.reason)}">${esc(e.conversation_id)}: ${esc(e.from)} → ${esc(e.to)}</button>`).join("");
+  return `<div class="cqa-list__row" style="cursor:default;align-items:flex-start;flex-wrap:wrap;row-gap:8px">
+    <div class="grow" style="min-width:220px">
+      <div style="font-weight:500">${esc(c.title)}</div>
+      <div class="small muted" style="margin-top:2px">
+        изменено ${c.changed} из ${c.decided} решённых${c.open ? ` · на рассмотрении ${c.open}` : ""}${shifts ? ` · ${shifts}` : ""}
+      </div>
+      ${examples ? `<div class="row" style="flex-wrap:wrap;gap:6px;margin-top:8px">${examples}</div>` : ""}
+    </div>
+    <div style="width:180px">
+      <div class="cqa-progress" title="Доля изменённых оценок"><div style="width:${share}%;background:var(--cqa-${verdict.tone === "bad" ? "red" : "green"}-fg)"></div></div>
+      <div class="xs faint" style="margin-top:4px">${c.changed_share == null ? "решений нет" : `${share}% изменено`}</div>
+    </div>
+    <span class="cqa-pill cqa-pill--${verdict.tone} cqa-pill--sm">${verdict.text}</span>
+  </div>`;
 }
 
 function criticalList(items) {

@@ -323,3 +323,19 @@ def test_extract_audio_src_unescapes(monkeypatch):
 
     monkeypatch.setattr(api.httpx, "get", lambda url, timeout: Page())
     assert api._extract_audio_src("https://player") == "https://x.test/f?sp=r&sig=a%3D"
+
+
+def test_dashboard_calibration_counts_reviewer_changes(setup):
+    client, _, _ = setup
+    ev = evaluate(client)
+    appeal = client.post(f"/api/evaluations/{ev['id']}/appeals", json={"criterion_id": "C6", "comment": "!"}).json()
+    client.post(f"/api/appeals/{appeal['id']}/decision",
+                json={"action": "change", "new_answer": 10, "reason": "Предупредил об ожидании"})
+    cal = client.get("/api/dashboard").json()["calibration"]
+    assert (cal["total"], cal["changed"]) == (1, 1)
+    c6 = cal["criteria"][0]
+    assert c6["criterion_id"] == "C6" and c6["shifts"] == [{"shift": "7 → 10", "count": 1}]
+    assert c6["examples"][0] == {"conversation_id": "t-001", "from": "7", "to": "10",
+                                 "reason": "Предупредил об ожидании"}
+    # руководитель другой линии апелляций по чужим диалогам не видит
+    assert client.get("/api/dashboard", headers={"X-CQA-User": "mgr-kzen"}).json()["calibration"]["total"] == 0

@@ -188,3 +188,73 @@ def build_dashboard(rows: Sequence[Row], checklist: Mapping[str, Any], kpi: Mapp
                       "reason": r.critical_reason, "total": r.total}
                      for r in critical_rows],
     }
+
+
+# Калибровка модели по апелляциям: где проверяющие чаще всего меняют оценку ИИ.
+
+MIN_DECIDED = 2            # меньше решений — выводов не делаем
+REVISE_SHARE = 0.5         # от этой доли изменённых оценок правило критерия стоит уточнить
+
+
+@dataclass(frozen=True)
+class AppealFact:
+    """Апелляция с исходным ответом модели — всё, что нужно для калибровки."""
+    criterion_id: str
+    conversation_id: str
+    status: str                    # open | confirmed | changed
+    model_answer: Any
+    new_answer: Any = None
+    reason: str = ""
+    decided_at: str = ""
+    ai_supports: bool | None = None     # второе мнение ИИ поддержало апелляцию (если запрашивали)
+
+
+def answer_label(answer: Any) -> str:
+    return {YES: "Да", NO: "Нет", NA: "N/A"}.get(answer, "—" if answer is None else str(answer))
+
+
+def appeal_calibration(appeals: Sequence[AppealFact], checklist: Mapping[str, Any],
+                       examples: int = 3) -> dict[str, Any]:
+    """По каждому критерию: сколько оценок оспорено и сколько проверяющие изменили, в какую сторону,
+    и вывод — уточнить правило, модель подтверждается или данных пока мало."""
+    titles = {c["id"]: c["title"] for c in checklist["criteria"]}
+    order = {c["id"]: c.get("order", 0) for c in checklist["criteria"]}
+    by_criterion: dict[str, list[AppealFact]] = defaultdict(list)
+    for a in appeals:
+        by_criterion[a.criterion_id].append(a)
+
+    criteria = []
+    for cid, items in by_criterion.items():
+        decided = [a for a in items if a.status != "open"]
+        changed = [a for a in decided if a.status == "changed"]
+        share = len(changed) / len(decided) if decided else None
+        shifts: dict[str, int] = defaultdict(int)
+        for a in changed:
+            shifts[f"{answer_label(a.model_answer)} → {answer_label(a.new_answer)}"] += 1
+        if len(decided) < MIN_DECIDED:
+            verdict = "few"
+        elif share >= REVISE_SHARE:
+            verdict = "revise"
+        else:
+            verdict = "holds"
+        criteria.append({
+            "criterion_id": cid, "title": titles.get(cid, cid),
+            "total": len(items), "open": len(items) - len(decided), "decided": len(decided),
+            "changed": len(changed), "changed_share": None if share is None else round(100 * share),
+            "shifts": [{"shift": s, "count": n} for s, n in sorted(shifts.items(), key=lambda kv: -kv[1])],
+            "verdict": verdict,
+            "examples": [{"conversation_id": a.conversation_id, "from": answer_label(a.model_answer),
+                          "to": answer_label(a.new_answer), "reason": a.reason}
+                         for a in sorted(changed, key=lambda a: a.decided_at, reverse=True)[:examples]],
+        })
+    criteria.sort(key=lambda c: (-c["changed"], -c["total"], order.get(c["criterion_id"], 0)))
+
+    decided_all = [a for a in appeals if a.status != "open"]
+    with_opinion = [a for a in decided_all if a.ai_supports is not None]
+    agreed = sum(1 for a in with_opinion if a.ai_supports == (a.status == "changed"))
+    return {
+        "total": len(appeals), "decided": len(decided_all),
+        "changed": sum(1 for a in decided_all if a.status == "changed"),
+        "ai_opinions": len(with_opinion), "ai_agreed": agreed,
+        "criteria": criteria,
+    }

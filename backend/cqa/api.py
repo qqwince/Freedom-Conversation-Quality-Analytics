@@ -22,7 +22,14 @@ from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Redirect
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from cqa.analytics import Row, build_dashboard, operator_conversations, operator_profile
+from cqa.analytics import (
+    AppealFact,
+    Row,
+    appeal_calibration,
+    build_dashboard,
+    operator_conversations,
+    operator_profile,
+)
 from cqa.coach import CoachLimitError
 from cqa.coach import ask as ask_coach
 from cqa.coach import build_context as build_coach_context
@@ -394,11 +401,24 @@ def create_app(service: CQAService | None = None, start_sync: bool | None = None
         require(user, Permission.DASHBOARD)
         rows, total_dialogs, checklist = analytics_rows(user)
         visible_ids = {r.conversation_id for r in rows}
-        open_appeals = 0
-        for a in service.storage.list_appeals(status="open"):
-            if service.storage.get_evaluation(a["evaluation_id"])["conversation_id"] in visible_ids:
-                open_appeals += 1
+        evaluations: dict[str, dict[str, Any]] = {}
+        facts = []
+        for a in service.storage.list_appeals():
+            if a["evaluation_id"] not in evaluations:
+                evaluations[a["evaluation_id"]] = service.storage.get_evaluation(a["evaluation_id"])
+            ev = evaluations[a["evaluation_id"]]
+            if ev["conversation_id"] not in visible_ids:
+                continue
+            decision, opinion = a.get("decision") or {}, a.get("ai_opinion") or {}
+            facts.append(AppealFact(
+                criterion_id=a["criterion_id"], conversation_id=ev["conversation_id"], status=a["status"],
+                model_answer=next((r["answer"] for r in ev["results"] if r["criterion_id"] == a["criterion_id"]), None),
+                new_answer=decision.get("new_answer"), reason=decision.get("reason") or "",
+                decided_at=a.get("decided_at") or "", ai_supports=opinion.get("supports_appeal"),
+            ))
+        open_appeals = sum(1 for f in facts if f.status == "open")
         return {**build_dashboard(rows, checklist, org.kpi, open_appeals, total_dialogs),
+                "calibration": appeal_calibration(facts, checklist),
                 "checklist_version": checklist["version"]}
 
     @app.get("/api/operators/{name}/feedback")

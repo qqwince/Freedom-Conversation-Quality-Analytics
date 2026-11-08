@@ -4,7 +4,15 @@ from __future__ import annotations
 
 from typing import Any
 
-from cqa.analytics import Row, build_dashboard, criterion_share, operator_profile, potential_gain
+from cqa.analytics import (
+    AppealFact,
+    Row,
+    appeal_calibration,
+    build_dashboard,
+    criterion_share,
+    operator_profile,
+    potential_gain,
+)
 from cqa.feedback import build_feedback, template_message
 from cqa.scoring import score
 
@@ -88,3 +96,29 @@ def test_dashboard(checklist):
     assert sum(b["count"] for b in d["distribution"]) == 2
     c7 = next(c for c in d["criteria"] if c["criterion_id"] == "C7")
     assert c7["compliance"] == 0.0 and c7["gain"] == 7.69
+
+
+def test_appeal_calibration_finds_criteria_to_revise(checklist):
+    facts = [
+        AppealFact("C4", "a", "changed", 10, 15, "второстепенный вопрос закрыт", "2026-11-08T10:00", ai_supports=True),
+        AppealFact("C4", "b", "changed", 10, 15, "закрыт", "2026-11-08T11:00", ai_supports=False),
+        AppealFact("C4", "c", "confirmed", 15, 15, "верно", "2026-11-08T09:00"),
+        AppealFact("C7", "d", "confirmed", "no", "no", "верно", "2026-11-08T09:00", ai_supports=False),
+        AppealFact("C7", "e", "confirmed", "no", "no", "верно", "2026-11-08T09:30"),
+        AppealFact("C1", "f", "open", "no"),
+    ]
+    cal = appeal_calibration(facts, checklist)
+    assert (cal["total"], cal["decided"], cal["changed"]) == (6, 5, 2)
+    assert (cal["ai_opinions"], cal["ai_agreed"]) == (3, 2)     # второе мнение совпало с решением 2 из 3
+
+    c4, c7, c1 = cal["criteria"]                                  # сначала — где чаще меняли
+    assert c4["criterion_id"] == "C4" and c4["changed_share"] == 67 and c4["verdict"] == "revise"
+    assert c4["shifts"] == [{"shift": "10 → 15", "count": 2}]
+    assert [e["conversation_id"] for e in c4["examples"]] == ["b", "a"]   # свежие решения первыми
+    assert c7["verdict"] == "holds" and c7["changed_share"] == 0
+    assert c1["verdict"] == "few" and c1["open"] == 1 and c1["changed_share"] is None
+
+
+def test_appeal_calibration_empty(checklist):
+    assert appeal_calibration([], checklist) == {"total": 0, "decided": 0, "changed": 0,
+                                                 "ai_opinions": 0, "ai_agreed": 0, "criteria": []}
