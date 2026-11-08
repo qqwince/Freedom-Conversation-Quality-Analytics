@@ -153,6 +153,7 @@ async function mount(root) {
   window.addEventListener("hashchange", route);
   window.addEventListener("resize", () => moveInk(root));
   root.addEventListener("pointerdown", ripple);
+  enableKeyboardRows(root);
   window.addEventListener("cqa:appeals-changed", () => refreshAppealsCount(root));
   onJobs((jobs) => renderJobs(root.querySelector("[data-role=job]"), jobs));
   onNewConversations((ids) => {
@@ -190,6 +191,34 @@ function moveInk(root) {
   if (!ink) return;
   ink.style.width = active ? `${active.offsetWidth}px` : "0";
   ink.style.transform = active ? `translateX(${active.offsetLeft}px)` : "";
+}
+
+// Строки списков, которые открываются щелчком: диалоги, грубые ошибки, линии, критерии, разделы карточки.
+const CLICKABLE_ROWS = ".cqa-list__row[data-open], .cqa-list__row[data-department], .cqa-list__row[data-action], "
+  + "[data-crit] > .cqa-list__row";
+
+/**
+ * Кликабельные строки доступны с клавиатуры: Tab переходит по ним, Enter или пробел открывают.
+ * Экраны пишут обычную разметку — фокус и роль добавляются здесь, в том числе новым строкам.
+ */
+function enableKeyboardRows(root) {
+  const mark = (scope) => scope.querySelectorAll?.(CLICKABLE_ROWS).forEach((row) => {
+    if (row.hasAttribute("tabindex")) return;
+    row.tabIndex = 0;
+    row.setAttribute("role", "button");
+  });
+  let pending = false;
+  new MutationObserver(() => {
+    if (pending) return;
+    pending = true;
+    queueMicrotask(() => { pending = false; mark(root); });
+  }).observe(root, { childList: true, subtree: true });
+  mark(root);
+  root.addEventListener("keydown", (event) => {
+    if ((event.key !== "Enter" && event.key !== " ") || !event.target.matches?.(CLICKABLE_ROWS)) return;
+    event.preventDefault();          // пробел не прокручивает страницу
+    event.target.click();
+  });
 }
 
 /** «Волна» от точки нажатия на кнопке. */

@@ -15,6 +15,7 @@ from dataclasses import dataclass
 from typing import Any, Literal
 
 from cqa.models import Conversation, CriterionVerdict, Evidence, LLMEvaluation
+from cqa.rules import find_critical
 from cqa.scoring import NA, NO, YES, Answer, ScoringError, normalize_answer
 from cqa.transcript import ConversationFacts, EventType
 
@@ -60,9 +61,21 @@ def _rule_closing_interrupted(v: CriterionVerdict, answer: Answer, conv: Convers
     return None
 
 
+def _rule_critical_phrases(v: CriterionVerdict, answer: Answer, conv: Conversation,
+                           facts: ConversationFacts) -> str | None:
+    """Модель не нашла грубых ошибок, а детерминированные правила нашли признак — пусть посмотрит человек."""
+    if answer != NO:
+        return None
+    hits = find_critical(conv, facts)
+    if not hits:
+        return None
+    return "«Нет», но правила нашли признак грубой ошибки: " + "; ".join(h.describe() for h in hits) + " — проверить"
+
+
 RULES: dict[str, RuleFn] = {
     "identity_event": _rule_identity_event,
     "closing_interrupted": _rule_closing_interrupted,
+    "critical_phrases": _rule_critical_phrases,
 }
 
 

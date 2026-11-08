@@ -91,6 +91,7 @@
 /* Фокус с клавиатуры виден на всех интерактивных элементах; мышью рамка не появляется. */
 .cqa-app :is(a, button, select, input, textarea, summary, [tabindex]):focus-visible {
   outline: 2px solid var(--cqa-green-fg); outline-offset: 2px; border-radius: var(--cqa-radius); }
+.cqa-app .cqa-list__row:focus-visible { outline-offset: -2px; }   /* у списка overflow: hidden — рамка внутри */
 .cqa-field { display: grid; gap: 6px; }
 .cqa-field > span { font-size: var(--cqa-fs-sm); color: var(--cqa-text-2); }
 .cqa-check { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-size: var(--cqa-fs-ui); }

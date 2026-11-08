@@ -283,7 +283,9 @@
       ],
       "decision": "Да — найден хотя бы один подтип; перечислите найденные подтипы с репликами. Нет — ни одного. Флаг не влияет на итоговый балл и показывается отдельно.",
       "is_critical_flag": true,
-      "validators": [],
+      "validators": [
+        "critical_phrases"
+      ],
       "examples": [],
       "export_id": "critical"
     }
